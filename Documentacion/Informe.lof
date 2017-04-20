@@ -1,0 +1,45 @@
+\select@language {spanish}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces Diagrama en bloques del sistema\relax }}{6}{figure.caption.4}
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Sistema de lazo cerrado\relax }}{7}{figure.caption.5}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Esquema simplificado de un convertidor tipo Buck\relax }}{8}{figure.caption.6}
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Diagrama de corrientes del convertidor Buck\relax }}{9}{figure.caption.7}
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Esquema del Convertidor Buck Sincr\IeC {\'o}nico\relax }}{10}{figure.caption.8}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Diagrama de un convertidor tipo Buck\relax }}{14}{figure.caption.10}
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Estados ON y OFF del convertidor Buck\relax }}{15}{figure.caption.11}
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Formas de onda del convertidor Buck\relax }}{16}{figure.caption.12}
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Circuito equivalente promediado durante un per\IeC {\'\i }odo $T_s$\relax }}{17}{figure.caption.13}
+\contentsline {subfigure}{\numberline {(a)}{\ignorespaces {Circuito original}}}{17}{subfigure.4.1}
+\contentsline {subfigure}{\numberline {(b)}{\ignorespaces {Circuito equivalente promedidado (no lineal)}}}{17}{subfigure.4.2}
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Circuito equivalente en DC\relax }}{18}{figure.caption.14}
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Circuito equivalente lineal y completo\relax }}{19}{figure.caption.15}
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Convertidor buck linealizado\relax }}{19}{figure.caption.16}
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Respuesta transitoria de lazo cerrado\relax }}{23}{figure.caption.19}
+\contentsline {figure}{\numberline {3.9}{\ignorespaces Estado estacionario\relax }}{27}{figure.caption.24}
+\contentsline {figure}{\numberline {3.10}{\ignorespaces Respuesta en frecuencia - Diagrama de Bode\relax }}{28}{figure.caption.25}
+\contentsline {figure}{\numberline {3.11}{\ignorespaces Diagrama de polos y ceros\relax }}{29}{figure.caption.26}
+\contentsline {figure}{\numberline {3.12}{\ignorespaces Diagrama de Nyquist\relax }}{30}{figure.caption.27}
+\contentsline {figure}{\numberline {3.13}{\ignorespaces Respuesta transitoria con baja frecuencia de muestreo\relax }}{33}{figure.caption.29}
+\contentsline {figure}{\numberline {3.14}{\ignorespaces Respuesta transitoria - Sistema Discreto\relax }}{34}{figure.caption.33}
+\contentsline {figure}{\numberline {3.15}{\ignorespaces Estado estacionario - Sistema Discreto\relax }}{35}{figure.caption.34}
+\contentsline {figure}{\numberline {3.16}{\ignorespaces Respuesta en frecuencia - Diagrama de Bode - Sistema Discreto\relax }}{36}{figure.caption.35}
+\contentsline {figure}{\numberline {3.17}{\ignorespaces Diagrama de polos y ceros - Sistema Discreto\relax }}{37}{figure.caption.36}
+\contentsline {figure}{\numberline {3.18}{\ignorespaces Diagrama de Nyquist - Sistema Discreto\relax }}{38}{figure.caption.37}
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Esquema principal del circuito de control\relax }}{40}{figure.caption.38}
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Circuito de acondicionamiento de se\IeC {\~n}al\relax }}{41}{figure.caption.39}
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Ilustraci\IeC {\'o}n del concepto de Dead-Time o tiempo muerto\relax }}{42}{figure.caption.40}
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Estructura del m\IeC {\'o}dulo ADC\relax }}{42}{figure.caption.41}
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Proceso de muestreo y conversi\IeC {\'o}n\relax }}{43}{figure.caption.42}
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Intercalado del muestreo para los Convertidores Buck\relax }}{44}{figure.caption.43}
+\contentsline {figure}{\numberline {4.7}{\ignorespaces Leading-Edge Blanking\relax }}{44}{figure.caption.44}
+\contentsline {figure}{\numberline {4.8}{\ignorespaces Circuito de realimentaci\IeC {\'o}n de tensi\IeC {\'o}n\relax }}{45}{figure.caption.45}
+\contentsline {figure}{\numberline {4.9}{\ignorespaces Circuito de realimentaci\IeC {\'o}n de corriente\relax }}{46}{figure.caption.47}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Tiempo de subida de 2V a 20V de 330$\mu s$\relax }}{53}{figure.caption.52}
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Tiempo de bajada de 20V a 2V de $610\mu s$\relax }}{53}{figure.caption.53}
+\addvspace {10\p@ }
+\addvspace {10\p@ }

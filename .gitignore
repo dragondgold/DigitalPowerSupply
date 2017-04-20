@@ -1,0 +1,7 @@
+Altium/*/History/
+Altium/*/__Previews/
+Altium/*/Project Logs for */
+*.ini
+PowerSupplyFirmware.X/dist/default/production/PowerSupplyFirmware.X.production.cof
+PowerSupplyFirmware.X/dist/default/production/PowerSupplyFirmware.X.production.map
+PowerSupplyFirmware.X/dist/default/production/memoryfile.xml

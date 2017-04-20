@@ -1,0 +1,10 @@
+[ProjectGroup]
+Version=1.0
+[Project1]
+ProjectPath=PCB Potencia\PCB Potencia.PrjPcb
+[Project2]
+ProjectPath=..\..\Librerias Altium\NXT - Connectors\NXT - Connectors.LibPkg
+[Project3]
+ProjectPath=..\..\Librerias Altium\NXT - Diodes\NXT - Diodes.LibPkg
+[Project4]
+ProjectPath=Control\Control.PrjPcb
