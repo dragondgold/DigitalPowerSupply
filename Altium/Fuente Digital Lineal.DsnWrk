@@ -1,16 +1,18 @@
 [ProjectGroup]
 Version=1.0
 [Project1]
-ProjectPath=PCB Potencia\PCB Potencia.PrjPcb
-[Project2]
 ProjectPath=Control\Control.PrjPcb
-[Project3]
+[Project2]
 ProjectPath=..\..\..\Google Drive\Electronica\Librerias Altium\NXT - Connectors\NXT - Connectors.LibPkg
-[Project4]
+[Project3]
 ProjectPath=..\..\..\Google Drive\Electronica\Librerias Altium\NXT - IC\NXT - IC.LibPkg
-[Project5]
+[Project4]
 ProjectPath=..\..\..\Google Drive\Electronica\Librerias Altium\NXT - Inductors\NXT - Inductors.LibPkg
-[Project6]
+[Project5]
 ProjectPath=..\..\..\Google Drive\Electronica\Librerias Altium\NXT - Diodes\NXT - Diodes.LibPkg
-[Project7]
+[Project6]
 ProjectPath=..\..\..\Google Drive\Electronica\Librerias Altium\NXT - Capacitor\NXT - Capacitor.LibPkg
+[Project7]
+ProjectPath=PCB Potencia\PCB Potencia.PrjPcb
+[Project8]
+ProjectPath=..\..\..\Google Drive\Electronica\Watch\Altium\Watch 1.0\Watch 1.0 - Board 1.PrjPcb
