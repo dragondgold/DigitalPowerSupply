@@ -155,429 +155,263 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=
 
-[Document8]
-DocumentPath=Fabrication\Gerber.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
-[Document9]
-DocumentPath=Fabrication\DrillGuide.Cam
-AnnotationEnabled=1
-AnnotateStartValue=1
-AnnotationIndexControlEnabled=0
-AnnotateSuffix=
-AnnotateScope=All
-AnnotateOrder=-1
-DoLibraryUpdate=1
-DoDatabaseUpdate=1
-ClassGenCCAutoEnabled=1
-ClassGenCCAutoRoomEnabled=1
-ClassGenNCAutoScope=None
-DItemRevisionGUID=
-GenerateClassCluster=0
-DocumentUniqueId=
-
 [GeneratedDocument1]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.1
-DItemRevisionGUID=
-
-[GeneratedDocument2]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.1
 DItemRevisionGUID=
 
-[GeneratedDocument3]
+[GeneratedDocument2]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.1
 DItemRevisionGUID=
 
-[GeneratedDocument4]
-DocumentPath=Project Outputs for Free Documents\NC Drill\Potencia.DRR
-DItemRevisionGUID=
-
-[GeneratedDocument5]
+[GeneratedDocument3]
 DocumentPath=Project Outputs for PCB Potencia\NC Drill\Potencia.DRR
 DItemRevisionGUID=
 
-[GeneratedDocument6]
+[GeneratedDocument4]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.DRR
 DItemRevisionGUID=
 
-[GeneratedDocument7]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.EXTREP
-DItemRevisionGUID=
-
-[GeneratedDocument8]
+[GeneratedDocument5]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.EXTREP
 DItemRevisionGUID=
 
-[GeneratedDocument9]
+[GeneratedDocument6]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.EXTREP
 DItemRevisionGUID=
 
-[GeneratedDocument10]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GBL
-DItemRevisionGUID=
-
-[GeneratedDocument11]
+[GeneratedDocument7]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GBL
 DItemRevisionGUID=
 
-[GeneratedDocument12]
+[GeneratedDocument8]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GBL
 DItemRevisionGUID=
 
-[GeneratedDocument13]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GBO
-DItemRevisionGUID=
-
-[GeneratedDocument14]
+[GeneratedDocument9]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GBO
 DItemRevisionGUID=
 
-[GeneratedDocument15]
+[GeneratedDocument10]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GBO
 DItemRevisionGUID=
 
-[GeneratedDocument16]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GBP
-DItemRevisionGUID=
-
-[GeneratedDocument17]
+[GeneratedDocument11]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GBP
 DItemRevisionGUID=
 
-[GeneratedDocument18]
+[GeneratedDocument12]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GBP
 DItemRevisionGUID=
 
-[GeneratedDocument19]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GBS
-DItemRevisionGUID=
-
-[GeneratedDocument20]
+[GeneratedDocument13]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GBS
 DItemRevisionGUID=
 
-[GeneratedDocument21]
+[GeneratedDocument14]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GBS
 DItemRevisionGUID=
 
-[GeneratedDocument22]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GKO
-DItemRevisionGUID=
-
-[GeneratedDocument23]
+[GeneratedDocument15]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GKO
 DItemRevisionGUID=
 
-[GeneratedDocument24]
+[GeneratedDocument16]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GKO
 DItemRevisionGUID=
 
-[GeneratedDocument25]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM1
-DItemRevisionGUID=
-
-[GeneratedDocument26]
+[GeneratedDocument17]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM1
 DItemRevisionGUID=
 
-[GeneratedDocument27]
+[GeneratedDocument18]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM1
 DItemRevisionGUID=
 
-[GeneratedDocument28]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM2
-DItemRevisionGUID=
-
-[GeneratedDocument29]
+[GeneratedDocument19]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM2
 DItemRevisionGUID=
 
-[GeneratedDocument30]
+[GeneratedDocument20]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM2
 DItemRevisionGUID=
 
-[GeneratedDocument31]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM3
-DItemRevisionGUID=
-
-[GeneratedDocument32]
+[GeneratedDocument21]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM3
 DItemRevisionGUID=
 
-[GeneratedDocument33]
+[GeneratedDocument22]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM3
 DItemRevisionGUID=
 
-[GeneratedDocument34]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM4
-DItemRevisionGUID=
-
-[GeneratedDocument35]
+[GeneratedDocument23]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM4
 DItemRevisionGUID=
 
-[GeneratedDocument36]
+[GeneratedDocument24]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM4
 DItemRevisionGUID=
 
-[GeneratedDocument37]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM5
-DItemRevisionGUID=
-
-[GeneratedDocument38]
+[GeneratedDocument25]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM5
 DItemRevisionGUID=
 
-[GeneratedDocument39]
+[GeneratedDocument26]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM5
 DItemRevisionGUID=
 
-[GeneratedDocument40]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM6
-DItemRevisionGUID=
-
-[GeneratedDocument41]
+[GeneratedDocument27]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM6
 DItemRevisionGUID=
 
-[GeneratedDocument42]
+[GeneratedDocument28]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM6
 DItemRevisionGUID=
 
-[GeneratedDocument43]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM7
-DItemRevisionGUID=
-
-[GeneratedDocument44]
+[GeneratedDocument29]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM7
 DItemRevisionGUID=
 
-[GeneratedDocument45]
+[GeneratedDocument30]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM7
 DItemRevisionGUID=
 
-[GeneratedDocument46]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM8
-DItemRevisionGUID=
-
-[GeneratedDocument47]
+[GeneratedDocument31]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM8
 DItemRevisionGUID=
 
-[GeneratedDocument48]
+[GeneratedDocument32]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM8
 DItemRevisionGUID=
 
-[GeneratedDocument49]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM9
-DItemRevisionGUID=
-
-[GeneratedDocument50]
+[GeneratedDocument33]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM9
 DItemRevisionGUID=
 
-[GeneratedDocument51]
+[GeneratedDocument34]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM9
 DItemRevisionGUID=
 
-[GeneratedDocument52]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM10
-DItemRevisionGUID=
-
-[GeneratedDocument53]
+[GeneratedDocument35]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM10
 DItemRevisionGUID=
 
-[GeneratedDocument54]
+[GeneratedDocument36]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM10
 DItemRevisionGUID=
 
-[GeneratedDocument55]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM11
-DItemRevisionGUID=
-
-[GeneratedDocument56]
+[GeneratedDocument37]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM11
 DItemRevisionGUID=
 
-[GeneratedDocument57]
+[GeneratedDocument38]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM11
 DItemRevisionGUID=
 
-[GeneratedDocument58]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM12
-DItemRevisionGUID=
-
-[GeneratedDocument59]
+[GeneratedDocument39]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM12
 DItemRevisionGUID=
 
-[GeneratedDocument60]
+[GeneratedDocument40]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM12
 DItemRevisionGUID=
 
-[GeneratedDocument61]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM13
-DItemRevisionGUID=
-
-[GeneratedDocument62]
+[GeneratedDocument41]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM13
 DItemRevisionGUID=
 
-[GeneratedDocument63]
+[GeneratedDocument42]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM13
 DItemRevisionGUID=
 
-[GeneratedDocument64]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM14
-DItemRevisionGUID=
-
-[GeneratedDocument65]
+[GeneratedDocument43]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM14
 DItemRevisionGUID=
 
-[GeneratedDocument66]
+[GeneratedDocument44]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM14
 DItemRevisionGUID=
 
-[GeneratedDocument67]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM15
-DItemRevisionGUID=
-
-[GeneratedDocument68]
+[GeneratedDocument45]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM15
 DItemRevisionGUID=
 
-[GeneratedDocument69]
+[GeneratedDocument46]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM15
 DItemRevisionGUID=
 
-[GeneratedDocument70]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GM16
-DItemRevisionGUID=
-
-[GeneratedDocument71]
+[GeneratedDocument47]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GM16
 DItemRevisionGUID=
 
-[GeneratedDocument72]
+[GeneratedDocument48]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GM16
 DItemRevisionGUID=
 
-[GeneratedDocument73]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GML
-DItemRevisionGUID=
-
-[GeneratedDocument74]
+[GeneratedDocument49]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GML
 DItemRevisionGUID=
 
-[GeneratedDocument75]
+[GeneratedDocument50]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GML
 DItemRevisionGUID=
 
-[GeneratedDocument76]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GTL
-DItemRevisionGUID=
-
-[GeneratedDocument77]
+[GeneratedDocument51]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GTL
 DItemRevisionGUID=
 
-[GeneratedDocument78]
+[GeneratedDocument52]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GTL
 DItemRevisionGUID=
 
-[GeneratedDocument79]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GTO
-DItemRevisionGUID=
-
-[GeneratedDocument80]
+[GeneratedDocument53]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GTO
 DItemRevisionGUID=
 
-[GeneratedDocument81]
+[GeneratedDocument54]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GTO
 DItemRevisionGUID=
 
-[GeneratedDocument82]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GTP
-DItemRevisionGUID=
-
-[GeneratedDocument83]
+[GeneratedDocument55]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GTP
 DItemRevisionGUID=
 
-[GeneratedDocument84]
+[GeneratedDocument56]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GTP
 DItemRevisionGUID=
 
-[GeneratedDocument85]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.GTS
-DItemRevisionGUID=
-
-[GeneratedDocument86]
+[GeneratedDocument57]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.GTS
 DItemRevisionGUID=
 
-[GeneratedDocument87]
+[GeneratedDocument58]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.GTS
 DItemRevisionGUID=
 
-[GeneratedDocument88]
-DocumentPath=Project Outputs for Free Documents\NC Drill\Potencia.LDP
-DItemRevisionGUID=
-
-[GeneratedDocument89]
+[GeneratedDocument59]
 DocumentPath=Project Outputs for PCB Potencia\NC Drill\Potencia.LDP
 DItemRevisionGUID=
 
-[GeneratedDocument90]
+[GeneratedDocument60]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.LDP
 DItemRevisionGUID=
 
-[GeneratedDocument91]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.REP
-DItemRevisionGUID=
-
-[GeneratedDocument92]
+[GeneratedDocument61]
 DocumentPath=Project Outputs for PCB Potencia\Gerber\Potencia.REP
 DItemRevisionGUID=
 
-[GeneratedDocument93]
+[GeneratedDocument62]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.REP
 DItemRevisionGUID=
 
-[GeneratedDocument94]
-DocumentPath=Project Outputs for Free Documents\Gerber\Potencia.RUL
-DItemRevisionGUID=
-
-[GeneratedDocument95]
+[GeneratedDocument63]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.RUL
 DItemRevisionGUID=
 
-[GeneratedDocument96]
-DocumentPath=Project Outputs for Free Documents\NC Drill\Potencia.TXT
-DItemRevisionGUID=
-
-[GeneratedDocument97]
+[GeneratedDocument64]
 DocumentPath=Project Outputs for PCB Potencia\NC Drill\Potencia.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument98]
+[GeneratedDocument65]
 DocumentPath=Project Outputs for PCB Potencia\Potencia.TXT
 DItemRevisionGUID=
 
@@ -626,101 +460,6 @@ OutputName6=XSpice Netlist
 OutputDocumentPath6=
 OutputVariantName6=
 OutputDefault6=0
-OutputType7=CadnetixNetlist
-OutputName7=Cadnetix Netlist
-OutputDocumentPath7=
-OutputVariantName7=
-OutputDefault7=0
-OutputType8=CalayNetlist
-OutputName8=Calay Netlist
-OutputDocumentPath8=
-OutputVariantName8=
-OutputDefault8=0
-OutputType9=EDIF
-OutputName9=EDIF for PCB
-OutputDocumentPath9=
-OutputVariantName9=
-OutputDefault9=0
-OutputType10=EESofNetlist
-OutputName10=EESof Netlist
-OutputDocumentPath10=
-OutputVariantName10=
-OutputDefault10=0
-OutputType11=IntergraphNetlist
-OutputName11=Intergraph Netlist
-OutputDocumentPath11=
-OutputVariantName11=
-OutputDefault11=0
-OutputType12=MentorBoardStationNetlist
-OutputName12=Mentor BoardStation Netlist
-OutputDocumentPath12=
-OutputVariantName12=
-OutputDefault12=0
-OutputType13=MultiWire
-OutputName13=MultiWire
-OutputDocumentPath13=
-OutputVariantName13=
-OutputDefault13=0
-OutputType14=OrCadPCB2Netlist
-OutputName14=Orcad/PCB2 Netlist
-OutputDocumentPath14=
-OutputVariantName14=
-OutputDefault14=0
-OutputType15=PADSNetlist
-OutputName15=PADS ASCII Netlist
-OutputDocumentPath15=
-OutputVariantName15=
-OutputDefault15=0
-OutputType16=Pcad
-OutputName16=Pcad for PCB
-OutputDocumentPath16=
-OutputVariantName16=
-OutputDefault16=0
-OutputType17=PCADnltNetlist
-OutputName17=PCADnlt Netlist
-OutputDocumentPath17=
-OutputVariantName17=
-OutputDefault17=0
-OutputType18=Protel2Netlist
-OutputName18=Protel2 Netlist
-OutputDocumentPath18=
-OutputVariantName18=
-OutputDefault18=0
-OutputType19=ProtelNetlist
-OutputName19=Protel
-OutputDocumentPath19=
-OutputVariantName19=
-OutputDefault19=0
-OutputType20=RacalNetlist
-OutputName20=Racal Netlist
-OutputDocumentPath20=
-OutputVariantName20=
-OutputDefault20=0
-OutputType21=RINFNetlist
-OutputName21=RINF Netlist
-OutputDocumentPath21=
-OutputVariantName21=
-OutputDefault21=0
-OutputType22=SciCardsNetlist
-OutputName22=SciCards Netlist
-OutputDocumentPath22=
-OutputVariantName22=
-OutputDefault22=0
-OutputType23=TangoNetlist
-OutputName23=Tango Netlist
-OutputDocumentPath23=
-OutputVariantName23=
-OutputDefault23=0
-OutputType24=TelesisNetlist
-OutputName24=Telesis Netlist
-OutputDocumentPath24=
-OutputVariantName24=
-OutputDefault24=0
-OutputType25=WireListNetlist
-OutputName25=WireList Netlist
-OutputDocumentPath25=
-OutputVariantName25=
-OutputDefault25=0
 
 [OutputGroup2]
 Name=Simulator Outputs

@@ -3,14 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/smps.c</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/definitions.h</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/CommandParser.c</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/pid.c</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/pid.h</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/main.c</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/ds1307.c</file>
-            <file>file:/C:/Users/Andres%20Torti/Google%20Drive/Electronica/Fuente%20Digital%20Lineal/PowerSupplyFirmware.X/smps.h</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/traps.c</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/main.c</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/mcc_generated_files/mcc.c</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/smps.c</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/definitions.h</file>
+            <file>file:/D:/Git-Repos/DigitalPowerSupply/PowerSupplyFirmware.X/smps.h</file>
         </group>
     </open-files>
 </project-private>

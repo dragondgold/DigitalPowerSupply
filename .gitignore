@@ -6,3 +6,6 @@ PowerSupplyFirmware.X/dist/default/production/PowerSupplyFirmware.X.production.c
 PowerSupplyFirmware.X/dist/default/production/PowerSupplyFirmware.X.production.map
 PowerSupplyFirmware.X/dist/default/production/memoryfile.xml
 Altium/PCB Potencia/Project Outputs for PCB Potencia/
+PowerSupplyFirmware.X/build/
+PowerSupplyFirmware.X/dist/
+PowerSupplyFirmware.X/disassembly/
