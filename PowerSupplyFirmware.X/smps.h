@@ -14,6 +14,7 @@
 
 #define ENABLE_CURRENT_PROTECTION
 #define DEBUG_INTERRUPTS
+#define INSTANTANEUS_POWER_BUFFER_SAMPLES 32
 
 #define setBuckDuty(duty)       PDC1 = SDC1 = duty
 #define getBuckDuty()           PDC1
@@ -58,14 +59,18 @@ typedef struct {
     uint16_t    currentLimit;       // Corriente limite en valor del ADC
     uint16_t    current;            // Corriente actual en valor del ADC
     uint16_t    outputVoltage;      // Tension de salida en valor del ADC
-    double      averagePower;       // Potencia media
+    uint32_t    averagePower;       // Potencia media en valor del ADC
 
     myPIData    PID;                    // Controlador PID
     
-    uint16_t    enablePID:1;            // Indica si el PID est· habilitado
+    uint16_t    enablePID:1;            // Indica si el PID est√° habilitado
     uint16_t    overCurrent:1;          // Indica si hay un exceso de corriente actualmente
     uint16_t    currentLimitFired:1;    // Indica si se excedio el limite de corriente
-    uint16_t    enabled:1;              // Indica si la salida est· habilitada o no
+    uint16_t    enabled:1;              // Indica si la salida est√° habilitada o no
+    
+    // Buffer para calculo de potencia media
+    volatile uint16_t currentPowerSample;
+    volatile uint32_t powerValues[INSTANTANEUS_POWER_BUFFER_SAMPLES];
 } PowerSupplyStatus;
 
 void smpsInit(void);

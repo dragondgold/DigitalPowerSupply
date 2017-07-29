@@ -12,7 +12,7 @@ _myPI:
     push    w14
     push    CORCON
 
-    mov #0x00EB, w8	; Configuramos registro CORCON en modo integer y con saturación
+    mov #0x00EB, w8	; Configuramos registro CORCON en modo integer y con saturaciÃ³n
     mov w8, CORCON	;  normal en los acumuladores y memoria de datos
 
     mov [w0 + 0], w6	; Kp
@@ -56,9 +56,9 @@ _myPI:
     add	    a		; Sumamos los dos acumuladores
 
     sftac   a, #-16	; Desplazamos el proporcional 16 veces a la izquierda
-			;  porque la instrucción 'sac' toma los bits ACCxH del
+			;  porque la instrucciÃ³n 'sac' toma los bits ACCxH del
 			;  acumulador
-    sac.r   a, w0	; Como la función definida en C devuelve un int16_t el
+    sac.r   a, w0	; Como la funciÃ³n definida en C devuelve un int16_t el
 			;  compilador retorna el contenido de w0
 
     pop	    CORCON

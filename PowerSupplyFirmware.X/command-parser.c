@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <math.h>
 
-static char buffer[50] = {0};
+static char buffer[100] = {0};
 
 // External variables
 extern PowerSupplyStatus buckStatus;
@@ -79,6 +79,119 @@ int16_t _readStringWithTimeout(uint16_t timeout) {
     return 0;
 }
 
+/**
+ * Tensión del buck en volts
+ * @return Tensión del buck en volts
+ */
+float getBuckVoltage() {
+    return (((float)getMatchedVoltageADCValue(buckStatus.outputVoltage))*(ADC_VREF/(float)BUCK_ADC_COUNTS)) / (float)BUCK_V_FEEDBACK_FACTOR;
+}
+
+/**
+ * Corriente del buck en amperes
+ * @return Corriente del buck en amperes
+ */
+float getBuckCurrent() {
+    return (((float)getMatchedCurrentADCValue(buckStatus.current))*(ADC_VREF/(float)BUCK_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
+}
+
+/**
+ * Potencia del buck en Watts
+ * @return Potencia del buck en Watts
+ */
+float getBuckPower() {
+    return (float)buckStatus.averagePower * (float)BUCK_W_FACTOR;
+}
+
+/**
+ * Corriente límite del buck en amperes
+ * @return Corriente límite del buck en amperes
+ */
+float getBuckCurrentLimit() {
+    return ((float)buckStatus.currentLimit*(ADC_VREF / (float)BUCK_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
+}
+
+/**
+ * Tensión de la línea de 5V en volts
+ * @return Tensión de la línea de 5V en volts
+ */
+float get5VVoltage() {
+    return (((float)aux5VStatus.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_V_FEEDBACK_FACTOR;
+}
+
+/**
+ * Corriente de la línea de 5V en miliamperes
+ * @return Corriente de la línea de 5V en miliamperes
+ */
+uint16_t get5VCurrent() {
+    return (uint16_t)((((float)getMatchedCurrentADCValue(aux5VStatus.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR);
+}
+
+/**
+ * Potencia de la línea de 5V en Watts
+ * @return Potencia de la línea de 5V en Watts 
+ */
+float get5VPower() {
+    return (float)aux5VStatus.averagePower * (float)AUX_5V_W_FACTOR;
+}
+
+/**
+ * Corriente límite de la línea de 5V en miliamperes
+ * @return Corriente límite de la línea de 5V en miliamperes
+ */
+uint16_t get5VCurrentLimit() {
+    return (uint16_t)((((float)aux5VStatus.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR)*1000.0);
+}
+
+/**
+ * Tensión de la línea de 3.3V en volts
+ * @return Tensión de la línea de 3.3V en volts
+ */
+float get3V3Voltage() {
+    return (((float)aux3V3Status.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_V_FEEDBACK_FACTOR;
+}
+
+/**
+ * Corriente de la línea de 3.3V en miliamperes
+ * @return Corriente de la línea de 3.3V en miliamperes
+ */
+uint16_t get3V3Current() {
+    return (uint16_t)((((float)getMatchedCurrentADCValue(aux3V3Status.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR);
+}
+
+/**
+ * Potencia de la línea de 3.3V en Watts
+ * @return Potencia de la línea de 3.3V en Watts 
+ */
+float get3V3Power() {
+    return (float)aux3V3Status.averagePower * (float)AUX_3V3_W_FACTOR;
+}
+
+/**
+ * Corriente límite de la línea de 3.3V en miliamperes
+ * @return Corriente límite de la línea de 3.3V en miliamperes
+ */
+uint16_t get3V3CurrentLimit() {
+    return (uint16_t)((((float)aux3V3Status.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR)*1000.0);
+}
+
+void _constructDataString(char *buffer) {
+    sprintf(buffer, "%.2f;", getBuckVoltage());
+    sprintf(buffer, "%.2f;", getBuckCurrent());
+    sprintf(buffer, "%.2f;", getBuckPower());
+    sprintf(buffer, "%.2f;", getBuckCurrentLimit());
+    
+    sprintf(buffer, "%.2f;", get5VVoltage());
+    sprintf(buffer, "%03d;", get5VCurrent());
+    sprintf(buffer, "%.2f;", get5VPower());
+    sprintf(buffer, "%03d;", get5VCurrentLimit());
+    
+    sprintf(buffer, "%.2f;", get3V3Voltage());
+    sprintf(buffer, "%03d;", get3V3Current());
+    sprintf(buffer, "%.2f;", get3V3Power());
+    sprintf(buffer, "%03d", get3V3CurrentLimit());
+}
+
 void _decodeCommand(uint16_t command){
     switch (command){
         case SET_BUCK_VOLTAGE:
@@ -92,17 +205,16 @@ void _decodeCommand(uint16_t command){
             
         case GET_BUCK_VOLTAGE:
             WriteUART1(ACK);     
-            v = ((float)getMatchedVoltageADCValue(buckStatus.outputVoltage))*(ADC_VREF/(float)BUCK_ADC_COUNTS);
-            sprintf(buffer, "%.2f", v/BUCK_V_FEEDBACK_FACTOR);
+            v = getBuckVoltage(buckStatus);
+            sprintf(buffer, "%.2f", v);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
             
         case GET_BUCK_CURRENT:
             WriteUART1(ACK);
-            v = ((float)getMatchedCurrentADCValue(buckStatus.current))*(ADC_VREF/(float)BUCK_ADC_COUNTS);
-            v = v / (float)BUCK_I_FEEDBACK_FACTOR;
-            sprintf(buffer, "%.2f", (double)v);
+            v = getBuckCurrent(buckStatus);
+            sprintf(buffer, "%.2f", v);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
@@ -151,16 +263,15 @@ void _decodeCommand(uint16_t command){
             
         case GET_5V_VOLTAGE:
             WriteUART1(ACK);
-            v = ((float)aux5VStatus.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS);
-            sprintf(buffer, "%.2f", v/AUX_5V_V_FEEDBACK_FACTOR);
+            v = get5VVoltage();
+            sprintf(buffer, "%.2f", v);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
             
         case GET_5V_CURRENT:
             WriteUART1(ACK);
-            v = ((float)getMatchedCurrentADCValue(aux5VStatus.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS);
-            a = (uint16_t)(v / (float)AUX_5V_I_FEEDBACK_FACTOR);
+            a = (uint16_t)get5VCurrent();
             
             // No mostramos mas de 3 digitos
             if(a > 999) a = 999;
@@ -174,16 +285,15 @@ void _decodeCommand(uint16_t command){
             
         case GET_3V3_VOLTAGE:
             WriteUART1(ACK);
-            v = ((float)aux3V3Status.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS);
-            sprintf(buffer, "%.2f", v/AUX_3V3_V_FEEDBACK_FACTOR);
+            v = get3V3Voltage();
+            sprintf(buffer, "%.2f", v);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
             
         case GET_3V3_CURRENT:
             WriteUART1(ACK);
-            v = ((float)getMatchedCurrentADCValue(aux3V3Status.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS);
-            a = (uint16_t)(v / (float)AUX_3V3_I_FEEDBACK_FACTOR);
+            a = (uint16_t)get3V3Current();
             
             // No mostramos mas de 3 digitos
             if(a > 999) a = 999;
@@ -323,6 +433,11 @@ void _decodeCommand(uint16_t command){
             sprintf(buffer, "%.2f", v/BUCK_V_FEEDBACK_FACTOR);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
+            break;
+            
+        case GET_ALL_STRING:
+            _constructDataString(buffer);
+            putsUART1((unsigned int *)buffer);
             break;
                     
         default:

@@ -25,7 +25,7 @@
 // Generales
 #define ADC_VREF                    3.30
 
-// Par·metros Buck 1
+// Par√°metros Buck 1
 #define BUCK_DEFAULT_PID_ENABLE     0
 #define BUCK_PHASE                  3136    // 300kHz
 #define BUCK_MAX_DUTY_CYCLE         2988    // 95%
@@ -48,19 +48,23 @@
 //  este facor posteriormente:
 //
 // W = (ADC_V * ADC_I) * ((Vref/ADC_COUNT)^2 / (FACTOR_V * FACTOR_I))
-#define BUCK_W_FACTOR               ((ADC_VREF*ADC_VREF)/((double)BUCK_ADC_COUNTS*(double)BUCK_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR)
+#define BUCK_W_FACTOR               (((ADC_VREF*ADC_VREF)/((double)BUCK_ADC_COUNTS*(double)BUCK_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR))
 #define POWER_SAMPLE_INTERVAL       6e-6
 
 // Parametros lineas auxiliares
+#define AUX_ADC_COUNTS              4096
+
 #define MAX_CURRENT_5V              1020
-#define MAX_CURRENT_3V3             1020
 #define ON_OFF_5V_TRIS              TRISBbits.TRISB15  
 #define ON_OFF_5V_LAT               LATBbits.LATB15
 #define AUX_5V_V_FEEDBACK_FACTOR    0.641
-#define AUX_3V3_V_FEEDBACK_FACTOR   0.909
 #define AUX_5V_I_FEEDBACK_FACTOR    3.133   // mV/mA
+#define AUX_5V_W_FACTOR             (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_5V_V_FEEDBACK_FACTOR * AUX_5V_I_FEEDBACK_FACTOR))
+
+#define MAX_CURRENT_3V3             1020
+#define AUX_3V3_V_FEEDBACK_FACTOR   0.909
 #define AUX_3V3_I_FEEDBACK_FACTOR   6.666   // mV/mA
-#define AUX_ADC_COUNTS              4096
+#define AUX_3V3_W_FACTOR            (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_3V3_V_FEEDBACK_FACTOR * AUX_3V3_I_FEEDBACK_FACTOR))
 
 // Modulo UART
 #define RX_TRIS                 TRISBbits.TRISB12

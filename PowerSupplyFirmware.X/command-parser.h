@@ -42,6 +42,23 @@
 void commandParserTasks(void);
 void initCommandParser(void);
 
+float getBuckVoltage();
+float getBuckCurrent();
+float getBuckPower();
+float getBuckCurrentLimit();
+
+float get5VVoltage();
+uint16_t get5VCurrent();
+float get5VPower();
+uint16_t get5VCurrentLimit();
+
+float get3V3Voltage();
+uint16_t get3V3Current();
+float get3V3Power();
+uint16_t get3V3CurrentLimit();
+
+void _constructDataString(char *buffer);
+
 int16_t _readStringWithTimeout(uint16_t timeout);
 uint16_t _waitAndReceive(void);
 void _decodeCommand(uint16_t command);

@@ -8,12 +8,7 @@
 #include <math.h>
 #include "pid.h"
 
-// Buffer para calculo de potencia media
-#define INSTANTANEUS_POWER_BUFFER_SAMPLES 32
-static volatile uint16_t currentPowerSample = 0;
-static volatile uint32_t powerValues[INSTANTANEUS_POWER_BUFFER_SAMPLES] = {0};
-
-// Tablas de correcciÛn del ADC
+// Tablas de correcci√≥n del ADC
 #define ADC_VOLTAGE_ERROR_TABLE_SIZE 22
 static const int16_t adcVoltageErrorTable[][2] = { 
     { 0, 0 },         // { ADC Value, Cuanto sumar al valor del ADC obtenido }
@@ -72,8 +67,8 @@ PowerSupplyStatus aux5VStatus;
 PowerSupplyStatus aux3V3Status;
 
 /**
- * InterrupciÛn del filtro digital 0. Corresponde a AN0 -> Buck current.
- * El tiempo total de obtenciÛn es el tiempo de muestreo + tiempo de conversiÛn.
+ * Interrupci√≥n del filtro digital 0. Corresponde a AN0 -> Buck current.
+ * El tiempo total de obtenci√≥n es el tiempo de muestreo + tiempo de conversi√≥n.
  * 
  * Total time = Conversion time + Sampling time = 314ns + 34ns = 350ns
  * 
@@ -104,15 +99,15 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
 }
 
 /**
- * InterrupciÛn del filtro digital 1. Corresponde a AN1 -> Buck voltage.
+ * Interrupci√≥n del filtro digital 1. Corresponde a AN1 -> Buck voltage.
  * 
  * Este es un filtro de oversampling, al mismo tiempo los core 2 y 3 convierten
- *  los valores de tensiÛn y corriente de la lÌnea de 5V por lo que para cuando
- *  ambos filtros terminaron, las conversiones de 5V ya est·n finalizadas ya que
+ *  los valores de tensi√≥n y corriente de la l√≠nea de 5V por lo que para cuando
+ *  ambos filtros terminaron, las conversiones de 5V ya est√°n finalizadas ya que
  *  es un solo muestreo.
- * El filtro digital 1 es el de menor prioridad de interrupciÛn y ya que ambos
- *  filtros estan asociados a entradas con un trigger com˙n, si llegamos ac· el
- *  filtro digital 0 ya finalizÛ por lo que podemos pasar al step 2 y liberar los
+ * El filtro digital 1 es el de menor prioridad de interrupci√≥n y ya que ambos
+ *  filtros estan asociados a entradas con un trigger com√∫n, si llegamos ac√° el
+ *  filtro digital 0 ya finaliz√≥ por lo que podemos pasar al step 2 y liberar los
  *  cores 0 y 1 para leer el canal de 3.3V
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
@@ -132,12 +127,17 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
         setBuckDuty(output);
     }
 
+    // Guardamos los valores de potencia instant√°neos
+    if(buckStatus.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        buckStatus.powerValues[buckStatus.currentPowerSample++] = __builtin_muluu(buckStatus.current, buckStatus.outputVoltage);
+    }
+    
     setChannelsStep2();
     IFS11bits.ADFLTR1IF = 0;
 }
 
 /**
- * interrupciÛn del canal AN2 -> 5V current
+ * interrupci√≥n del canal AN2 -> 5V current
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {
     if(CURRENT_5V_ADC_BUFFER > MAX_CURRENT_5V){
@@ -158,15 +158,22 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {
 }
 
 /**
- * InterrupciÛn del canal AN3 -> 5V voltage
+ * Interrupci√≥n del canal AN3 -> 5V voltage. Menor prioridad que AN2 por lo que
+ *  esta se ejecuta luego de AN2
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN3Interrupt(void) {
     aux5VStatus.outputVoltage = VOLTAGE_5V_ADC_BUFFER;
+    
+    // Guardamos los valores de potencia instant√°neos
+    if(aux5VStatus.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        aux5VStatus.powerValues[aux5VStatus.currentPowerSample++] = __builtin_muluu(aux5VStatus.current, aux5VStatus.outputVoltage);
+    }
+    
     IFS7bits.ADCAN3IF = 0;
 }
 
 /**
- * InterrupciÛn del canal AN7 -> 3.3V current
+ * Interrupci√≥n del canal AN7 -> 3.3V current
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {
     if(CURRENT_3V3_ADC_BUFFER > MAX_CURRENT_3V3){
@@ -187,19 +194,25 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {
 }
 
 /**
- * InterrupciÛn del canal AN18 -> 3.3V voltage.
- * Como este canal tiene menor prioridad que AN7, cuando llegamos la interrupciÛn
- *  de AN7 ya se procesÛ por lo que volvemos al step 1
+ * Interrupci√≥n del canal AN18 -> 3.3V voltage.
+ * Como este canal tiene menor prioridad que AN7, cuando llegamos la interrupci√≥n
+ *  de AN7 ya se proces√≥ por lo que volvemos al step 1
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN18Interrupt(void) {
     aux3V3Status.outputVoltage = VOLTAGE_3V3_ADC_BUFFER;
+    
+    // Guardamos los valores de potencia instant√°neos
+    if(aux3V3Status.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        aux3V3Status.powerValues[aux3V3Status.currentPowerSample++] = __builtin_muluu(aux3V3Status.current, aux3V3Status.outputVoltage);
+    }
+    
     setChannelsStep1();
     IFS10bits.ADCAN18IF = 0;
 }
 
 /**
  * Inicializa los controladores PID, estructuras del estado de las salidas,
- *  mÛdulo PWM y ADC
+ *  m√≥dulo PWM y ADC
  */
 void smpsInit(void){   
     // Salidas de estado
@@ -207,8 +220,6 @@ void smpsInit(void){
     FAULT_LAT = 0;
     PWR_GOOD_TRIS = 0;
     PWR_GOOD_LAT = 0;
-    
-    currentPowerSample = 0;
     
     // Estados de ambos Buck
     buckStatus.PID.integralTerm = 0;
@@ -225,21 +236,24 @@ void smpsInit(void){
     buckStatus.currentLimit = BUCK_MAX_CURRENT;
     buckStatus.enablePID = BUCK_DEFAULT_PID_ENABLE;
     buckStatus.outputVoltage = 0;
+    buckStatus.currentPowerSample = 0;
     
     aux5VStatus.current = 0;
     aux5VStatus.currentLimit = MAX_CURRENT_5V;
     aux5VStatus.PID.measuredOutput = 0;
     aux5VStatus.outputVoltage = 0;
+    aux5VStatus.currentPowerSample = 0;
     
     aux3V3Status.current = 0;
     aux3V3Status.currentLimit = MAX_CURRENT_3V3;
     aux3V3Status.PID.measuredOutput = 0;
     aux3V3Status.outputVoltage = 0;
+    aux3V3Status.currentPowerSample = 0;
     
-    // ConfiguraciÛn general del modulo PWM
+    // Configuraci√≥n general del modulo PWM
     PTCONbits.PTEN = 0;         // Modulo PWM apagado
     PTCONbits.PTSIDL = 0;       // PWM continua en modo IDLE
-    PTCONbits.SEIEN = 0;        // InterrupciÛn por evento especial desactivada
+    PTCONbits.SEIEN = 0;        // Interrupci√≥n por evento especial desactivada
     PTCONbits.EIPU = 0;         // El periodo del PWM se actualiza al final del periodo actual
     PTCONbits.SYNCPOL = 0;      // El estado activo es 1 (no invertido)
     PTCONbits.SYNCOEN = 0;      // Salida de sincronismo apagado
@@ -286,18 +300,39 @@ void smpsInit(void){
 
 void smpsTasks(void) {
     uint16_t n;
-    double power = 0;
+    uint32_t power;
     
-    // C·lculo de la potencia media
-    if(currentPowerSample >= (INSTANTANEUS_POWER_BUFFER_SAMPLES - 1)) {
-        for(n = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
-            power += powerValues[n];
+    // C√°lculo de la potencia media del buck
+    if(buckStatus.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
+            power += buckStatus.powerValues[n];
         }
         
-        // Dividimos la sumatoria (·rea bajo la curva) por el intervalo de tiempo
-        power /= (double)INSTANTANEUS_POWER_BUFFER_SAMPLES;
+        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
         buckStatus.averagePower = power;
-        currentPowerSample = 0;
+        buckStatus.currentPowerSample = 0;
+    }
+    
+    // C√°lculo de la potencia media de la l√≠nea de 5V
+    if(aux5VStatus.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
+            power += aux5VStatus.powerValues[n];
+        }
+        
+        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
+        aux5VStatus.averagePower = power;
+        aux5VStatus.currentPowerSample = 0;
+    }
+    
+    // C√°lculo de la potencia media de la l√≠nea de 3.3V
+    if(aux3V3Status.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
+        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
+            power += aux3V3Status.powerValues[n];
+        }
+        
+        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
+        aux3V3Status.averagePower = power;
+        aux3V3Status.currentPowerSample = 0;
     }
 }
 
@@ -342,23 +377,23 @@ void auxDisable(void) {
 }
 
 /**
- * Configura la tensiÛn de salida del Buck 1
- * @param voltage tensiÛn de salida en milivolts
+ * Configura la tensi√≥n de salida del Buck 1
+ * @param voltage tensi√≥n de salida en milivolts
  */
 void setBuckVoltage(uint16_t voltage) {
-    // Convertimos la tensiÛn de salida en milivolts deseada al valor
-    //  correspondiente del ADC que deberÌa ser leÌdo aplicando el factor
-    //  de correcciÛn
+    // Convertimos la tensi√≥n de salida en milivolts deseada al valor
+    //  correspondiente del ADC que deber√≠a ser le√≠do aplicando el factor
+    //  de correcci√≥n
     float v = (float)voltage * (float)BUCK_V_FEEDBACK_FACTOR;
     buckStatus.PID.setpoint = getMatchedVoltageADCValue((uint16_t)(v*((float)BUCK_ADC_COUNTS/(ADC_VREF*1000.0))));
 }
 
 /**
- * Configura el lÌmite de corriente para el Buck 1
- * @param currentLimit lÌmite de corriente en miliamperes
+ * Configura el l√≠mite de corriente para el Buck 1
+ * @param currentLimit l√≠mite de corriente en miliamperes
  */
 void setBuckCurrentLimit(uint16_t currentLimit) {
-    // ConversiÛn de corriente de salida a tensiÛn leÌda en el ADC
+    // Conversi√≥n de corriente de salida a tensi√≥n le√≠da en el ADC
     float v = (float)BUCK_I_FEEDBACK_FACTOR * (float)currentLimit;
     buckStatus.currentLimit = (uint16_t)(v*((float)BUCK_ADC_COUNTS/(ADC_VREF*1000.0)));
     
@@ -368,11 +403,11 @@ void setBuckCurrentLimit(uint16_t currentLimit) {
 }
 
 /**
- * Configura el lÌmite de corriente para la salida de 5V
- * @param currentLimit lÌmite de corriente en miliamperes
+ * Configura el l√≠mite de corriente para la salida de 5V
+ * @param currentLimit l√≠mite de corriente en miliamperes
  */
 void set5VCurrentLimit(uint16_t currentLimit) {
-    // ConversiÛn de corriente de salida a tensiÛn leÌda en el ADC
+    // Conversi√≥n de corriente de salida a tensi√≥n le√≠da en el ADC
     float v = (float)AUX_5V_I_FEEDBACK_FACTOR * (float)currentLimit;
     aux5VStatus.currentLimit = (uint16_t)(v*((float)AUX_ADC_COUNTS/(ADC_VREF*1000.0)));
     
@@ -382,11 +417,11 @@ void set5VCurrentLimit(uint16_t currentLimit) {
 }
 
 /**
- * Configura el lÌmite de corriente para la salida de 3.3V
- * @param currentLimit lÌmite de corriente en miliamperes
+ * Configura el l√≠mite de corriente para la salida de 3.3V
+ * @param currentLimit l√≠mite de corriente en miliamperes
  */
 void set3V3CurrentLimit(uint16_t currentLimit) {
-    // ConversiÛn de corriente de salida a tensiÛn leÌda en el ADC
+    // Conversi√≥n de corriente de salida a tensi√≥n le√≠da en el ADC
     float v = (float)AUX_3V3_I_FEEDBACK_FACTOR * (float)currentLimit;
     aux3V3Status.currentLimit = (uint16_t)(v*((float)AUX_ADC_COUNTS/(ADC_VREF*1000.0)));
     
@@ -414,14 +449,14 @@ uint16_t _getMatchedADCValue(uint16_t adcValue, const int16_t table[][2], uint16
         }
     }
     
-    // Calculamos la correcciÛn que debe ser aplicada (interpolando de ser
+    // Calculamos la correcci√≥n que debe ser aplicada (interpolando de ser
     //  necesario)
     if(table[index][0] == adcValue) {
         return adcValue + table[index][1];
     }
     // Interpolamos el error
     else {
-        // interpolaciÛn
+        // interpolaci√≥n
         double escala = (double)(table[index][1] - table[index-1][1]) / 
             (double)(table[index][0] - table[index-1][0]);
         newADCValue = ((double)table[index-1][1]) + escala * (double)(adcValue - table[index-1][0]);
@@ -443,7 +478,7 @@ void _initBuckPWM(PowerSupplyStatus *data) {
 
     PWMCON1bits.FLTIEN = 0;     // Fault Interrupt deshabilitada
     PWMCON1bits.CLIEN = 0;      // Current-limit Interrupt deshabilitada
-    PWMCON1bits.TRGIEN = 0;     // No generar interrupciÛn en trigger
+    PWMCON1bits.TRGIEN = 0;     // No generar interrupci√≥n en trigger
     PWMCON1bits.ITB = 1;        // Independent Time Base. En Complementary controlamos
                                 //  el periodo con los registros PHASEx/SPHASEx
     PWMCON1bits.MDCS = 0;       // Los registros PDC1/SDC1 determinan el duty cycle
@@ -470,9 +505,9 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     IOCON1bits.PENL = 0;        // Pin PWML deshabilitado
     IOCON1bits.POLH = 0;        // PWMH activo alto
     IOCON1bits.POLL = 0;        // PWML activo alto
-    IOCON1bits.PMOD = 0;        // PMW1 en modo Complementario (para Buck sincrÛnico)
-    IOCON1bits.SWAP = 1;        // PWMH y PWML a sus respectivas salidas y no al revÈs
-    IOCON1bits.OSYNC = 0;       // Override es asÌncrono
+    IOCON1bits.PMOD = 0;        // PMW1 en modo Complementario (para Buck sincr√≥nico)
+    IOCON1bits.SWAP = 1;        // PWMH y PWML a sus respectivas salidas y no al rev√©s
+    IOCON1bits.OSYNC = 0;       // Override es as√≠ncrono
     
     AUXCON1bits.HRPDIS = 0;     // Alta resolucion de periodo
     AUXCON1bits.HRDDIS = 0;     // Alta resolucion de duty
@@ -481,7 +516,7 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     AUXCON1bits.CHOPLEN = 0;    // Chop deshabilitado en PWML
 
     /*
-     * PerÌodo del PWM viene dado por:
+     * Per√≠odo del PWM viene dado por:
      *  ( (ACLK * 8 * PWM_PERIOD)/(PMW_INPUT_PREESCALER) ) - 8
      *
      * Para una frecuencia de 300KHz con preescaler 1:1 y el ACLK en 117.92MHz
@@ -492,7 +527,7 @@ void _initBuckPWM(PowerSupplyStatus *data) {
      * El duty cycle viene dado por:
      *  (ACLK * 8 * PWM_DUTY)/(PMW_INPUT_PREESCALER)
      *
-     * La resoluciÛn del duty es:
+     * La resoluci√≥n del duty es:
      *  log2( (ACLK * 8 * PWM_PERIOD)/(PMW_INPUT_PREESCALER) ) = 11.6 bits
      *
      */
@@ -504,15 +539,14 @@ void _initBuckPWM(PowerSupplyStatus *data) {
      */
     DTR1 = data->deadTime;      // Dead-time para PWMH
     ALTDTR1 = data->deadTime;   // Dead-time para PWML
-    DTR1 = ALTDTR1 = 0;
 }
 
 void _initADC(void) {
     /**
      * Es importante que todos los cores del ADC esten configurados exactamente
-     * igual, su fuente de trigger sea la misma e inicien la conversiÛn al mismo
-     * tiempo para poder hacer sampling simult·neo de otro modo el resultado de
-     * la conversiÛn ser· erroneo debido a un error en el modulo. Copia del errata:
+     * igual, su fuente de trigger sea la misma e inicien la conversi√≥n al mismo
+     * tiempo para poder hacer sampling simult√°neo de otro modo el resultado de
+     * la conversi√≥n ser√° erroneo debido a un error en el modulo. Copia del errata:
      * 
      *  When using multiple ADC cores, if one of the
      *  ADC cores completes conversion while other
@@ -712,7 +746,7 @@ void _initADC(void) {
     // AN3 (5v voltage)
     IFS7bits.ADCAN3IF = 0;
     IEC7bits.ADCAN3IE = 1;
-    IPC28bits.ADCAN3IP = 5;
+    IPC28bits.ADCAN3IP = 4;
     
     // AN7 (3.3v current)
     IFS7bits.ADCAN7IF = 0;

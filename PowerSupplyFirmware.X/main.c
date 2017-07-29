@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     /* Configuramos al FRC con PLL para funcionar tambien como REFCLK
      * La frecuencia nominal del REFCLK es de 120 MHz
      * El postcaler del clock auxiliar se configura como 1:1
-     *  (APSTSCLR<2:0> = 111) para la correcta operación del módulo PWM
+     *  (APSTSCLR<2:0> = 111) para la correcta operaciÃ³n del mÃ³dulo PWM
      * ((FRC * 16) / APSTSCLR) = (7.37 * 16) / 1 = 117.92 MHz */
     ACLKCONbits.FRCSEL = 1;             // Usamos el oscilador FRC como fuente del REFCLK
     ACLKCONbits.SELACLK = 1;            // La fuente de clock esta dada por el oscilador auxiliar
