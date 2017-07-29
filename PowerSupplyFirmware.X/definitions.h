@@ -42,16 +42,16 @@
 #define BUCK_V_FEEDBACK_FACTOR      0.1092
 #define BUCK_I_FEEDBACK_FACTOR      1.044   // mV/mA
 #define BUCK_ADC_COUNTS             16384   // 14 bits oversampling
-// Este factor permite convertir la multiplicacion de tension*corriente en valores de ADC al valor
-//  correspondiente en Watts. La ventaja de esto es que en la interrupcion podemos multiplicar los
-//  valores enteros del ADC rapidamente y para obtener el valor de potencia en Watts multiplicar por
+// Este factor permite convertir la multiplicación de tensión*corriente en valores de ADC al valor
+//  correspondiente en Watts. La ventaja de esto es que en la interrupción podemos multiplicar los
+//  valores enteros del ADC rápidamente y para obtener el valor de potencia en Watts multiplicar por
 //  este facor posteriormente:
 //
 // W = (ADC_V * ADC_I) * ((Vref/ADC_COUNT)^2 / (FACTOR_V * FACTOR_I))
 #define BUCK_W_FACTOR               (((ADC_VREF*ADC_VREF)/((double)BUCK_ADC_COUNTS*(double)BUCK_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR))
 #define POWER_SAMPLE_INTERVAL       6e-6
 
-// Parametros lineas auxiliares
+// parámetros lineas auxiliares
 #define AUX_ADC_COUNTS              4096
 
 #define MAX_CURRENT_5V              1020

@@ -76,9 +76,7 @@ PowerSupplyStatus aux3V3Status;
  * 
  *  350ns * 16 = 5.6us
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
-    LATBbits.LATB5 = !LATBbits.LATB5;
-    
+void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {    
     // Verificamos que no haya exceso de corriente
     #ifdef ENABLE_CURRENT_PROTECTION
     if(BUCK_CURRENT_ADC_BUFFER > BUCK_MAX_CURRENT){

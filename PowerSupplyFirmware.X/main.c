@@ -114,19 +114,12 @@ int main(int argc, char** argv) {
     initCommandParser();
     initDebugUART();
     
-    //writeDebugUART("System ready!");
-    //writeDebugUART("Version: " SYSTEM_VERSION);
+    writeDebugUART("System ready!");
+    writeDebugUART("Version: " SYSTEM_VERSION);
     
-    FAULT_TRIS = 0;
-    LATBbits.LATB5 = 1;
-    LATBbits.LATB5 = 0;
-    LATBbits.LATB5 = 1;
-    LATBbits.LATB5 = 0;
-    LATBbits.LATB5 = 1;
     while(1){
-        //LATBbits.LATB5 = !LATBbits.LATB5;
-        //commandParserTasks();
-        //smpsTasks();
+        commandParserTasks();
+        smpsTasks();
     }
 
     return (EXIT_SUCCESS);
