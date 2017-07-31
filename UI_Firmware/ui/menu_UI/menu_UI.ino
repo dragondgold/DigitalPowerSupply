@@ -316,6 +316,7 @@ void loop()
 // *********************************************************************
 //  MY FUNCTIONS
 // *********************************************************************
+
 void setCommand(uint8_t command, float value){
   Serial.write(command); 
   var = millis(); 

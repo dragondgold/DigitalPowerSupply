@@ -1,0 +1,32 @@
+Added Component: Designator=P1(HDR1X5H)
+Added Component: Designator=sw1(MY_TACTILE-PTH)
+Added Component: Designator=sw2(MY_TACTILE-PTH)
+Added Component: Designator=sw3(MY_TACTILE-PTH)
+Added Component: Designator=sw4(MY_TACTILE-PTH)
+Added Pin To Net: NetName=GND Pin=P1-1
+Added Pin To Net: NetName=GND Pin=sw1-1
+Added Pin To Net: NetName=GND Pin=sw1-1
+Added Pin To Net: NetName=GND Pin=sw2-1
+Added Pin To Net: NetName=GND Pin=sw2-1
+Added Pin To Net: NetName=GND Pin=sw3-1
+Added Pin To Net: NetName=GND Pin=sw3-1
+Added Pin To Net: NetName=GND Pin=sw4-1
+Added Pin To Net: NetName=GND Pin=sw4-1
+Added Net: Name=GND
+Added Pin To Net: NetName=NetP1_2 Pin=P1-2
+Added Pin To Net: NetName=NetP1_2 Pin=sw4-2
+Added Pin To Net: NetName=NetP1_2 Pin=sw4-2
+Added Net: Name=NetP1_2
+Added Pin To Net: NetName=NetP1_3 Pin=P1-3
+Added Pin To Net: NetName=NetP1_3 Pin=sw3-2
+Added Pin To Net: NetName=NetP1_3 Pin=sw3-2
+Added Net: Name=NetP1_3
+Added Pin To Net: NetName=NetP1_4 Pin=P1-4
+Added Pin To Net: NetName=NetP1_4 Pin=sw2-2
+Added Pin To Net: NetName=NetP1_4 Pin=sw2-2
+Added Net: Name=NetP1_4
+Added Pin To Net: NetName=NetP1_5 Pin=P1-5
+Added Pin To Net: NetName=NetP1_5 Pin=sw1-2
+Added Pin To Net: NetName=NetP1_5 Pin=sw1-2
+Added Net: Name=NetP1_5
+Added Class: Name=botonera
