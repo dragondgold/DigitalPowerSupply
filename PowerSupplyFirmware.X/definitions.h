@@ -32,15 +32,15 @@
 #define BUCK_INITIAL_DUTY_CYCLE     (BUCK_MAX_DUTY_CYCLE/2)
 #define BUCK_MIN_DUTY_CYCLE         60      // 2%
 #define BUCK_DEAD_TIME              157     // 5%
-#define BUCK_MAX_CURRENT            500
+#define BUCK_MAX_CURRENT            14894   // 3A
 #define BUCK_KP                     300
 #define BUCK_KI                     4070
 #define BUCK_PWMH_TRIS              TRISAbits.TRISA4
 #define BUCK_PWML_TRIS              TRISAbits.TRISA3
 #define BUCK_PWMH_LAT               LATBbits.LATB4
 #define BUCK_PWML_LAT               LATBbits.LATB3
-#define BUCK_V_FEEDBACK_FACTOR      0.1092
-#define BUCK_I_FEEDBACK_FACTOR      1.044   // mV/mA
+#define BUCK_V_FEEDBACK_FACTOR      0.109
+#define BUCK_I_FEEDBACK_FACTOR      1.000   // mV/mA
 #define BUCK_ADC_COUNTS             16384   // 14 bits oversampling
 // Este factor permite convertir la multiplicación de tensión*corriente en valores de ADC al valor
 //  correspondiente en Watts. La ventaja de esto es que en la interrupción podemos multiplicar los
@@ -49,21 +49,20 @@
 //
 // W = (ADC_V * ADC_I) * ((Vref/ADC_COUNT)^2 / (FACTOR_V * FACTOR_I))
 #define BUCK_W_FACTOR               (((ADC_VREF*ADC_VREF)/((double)BUCK_ADC_COUNTS*(double)BUCK_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR))
-#define POWER_SAMPLE_INTERVAL       6e-6
 
 // parámetros lineas auxiliares
 #define AUX_ADC_COUNTS              4096
 
-#define MAX_CURRENT_5V              1020
+#define MAX_CURRENT_5V              2482    // 1A
 #define ON_OFF_5V_TRIS              TRISBbits.TRISB15  
 #define ON_OFF_5V_LAT               LATBbits.LATB15
-#define AUX_5V_V_FEEDBACK_FACTOR    0.641
-#define AUX_5V_I_FEEDBACK_FACTOR    3.133   // mV/mA
+#define AUX_5V_V_FEEDBACK_FACTOR    0.637
+#define AUX_5V_I_FEEDBACK_FACTOR    2.000   // mV/mA
 #define AUX_5V_W_FACTOR             (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_5V_V_FEEDBACK_FACTOR * AUX_5V_I_FEEDBACK_FACTOR))
 
-#define MAX_CURRENT_3V3             1020
-#define AUX_3V3_V_FEEDBACK_FACTOR   0.909
-#define AUX_3V3_I_FEEDBACK_FACTOR   6.666   // mV/mA
+#define MAX_CURRENT_3V3             1117    // 0.3A
+#define AUX_3V3_V_FEEDBACK_FACTOR   0.955
+#define AUX_3V3_I_FEEDBACK_FACTOR   3.000   // mV/mA
 #define AUX_3V3_W_FACTOR            (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_3V3_V_FEEDBACK_FACTOR * AUX_3V3_I_FEEDBACK_FACTOR))
 
 // Modulo UART
@@ -78,7 +77,7 @@
 #define PWR_GOOD_TRIS           TRISBbits.TRISB15
 #define PWR_GOOD_LAT            LATBbits.LATB15
 
-// Entradas analogicas
+// Entradas analógicas
 #define BUCK_CURRENT_TRIS       TRISAbits.TRISA0
 #define BUCK_VOLTAGE_TRIS       TRISAbits.TRISA1
 #define AUX_5V_CURRENT_TRIS     TRISAbits.TRISA2
