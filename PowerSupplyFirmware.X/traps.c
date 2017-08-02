@@ -63,5 +63,5 @@ void __attribute__((interrupt,no_auto_psv)) _AltMathError()
 // improperly defined or undefined interrupt handling routine.
 void __attribute__((interrupt,no_auto_psv)) _DefaultInterrupt() {
         int trap = 1;
-        while (trap);
+        //while (trap);
 }

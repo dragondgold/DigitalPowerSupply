@@ -16,12 +16,13 @@ extern PowerSupplyStatus aux5VStatus;
 extern PowerSupplyStatus aux3V3Status;
 
 static float v;
-static uint16_t status, a, b, c;
+static uint16_t status, a;
 
 void initCommandParser(void) {
     RX_TRIS = 1;
     TX_TRIS = 0;
     
+    U1MODEbits.UARTEN = 0;
     U1MODEbits.IREN = 0;                // IrDA deshabilitado
     U1MODEbits.RTSMD = 1;               // Modo Simplex
     U1MODEbits.UEN = 0b00;              // Solo usamos pines RX y TX
@@ -34,19 +35,45 @@ void initCommandParser(void) {
     U1BRG = 37;                         // 115200 baudios a 70 MIPS
     
     U1STAbits.URXISEL = 0;
+    U1STAbits.ADDEN = 0;
     U1STAbits.UTXINV = 0;               // No invertimos pin TX
     U1STAbits.UTXBRK = 0;               // Sync Break desactivado
-    U1STAbits.URXISEL = 0b00;           // Interrupcion al recibir solo un caracter
-    U1STAbits.UTXEN = 1;
+    U1STAbits.URXISEL = 0b00;           // Interrupción al recibir solo un caracter
+    U1STAbits.UTXEN = 0;
+    
     U1MODEbits.UARTEN = 1;              // UART habilitado
-    U1STAbits.UTXEN = 1;                // TX habilitado (debe habilitarse despues
+    U1STAbits.UTXEN = 1;                // TX habilitado (debe habilitarse después
                                         // de haber habilitado el modulo)
+    
+    __delay_us(10);
+    
+    // Configuramos el timer para realizar el envío de datos cada cierto tiempo
+    T1CONbits.TON = 0;
+    T1CONbits.TSIDL = 0;
+    T1CONbits.TGATE = 0;
+    T1CONbits.TCKPS = 0b11;             // Prescaler 1:256
+    T1CONbits.TCS = 0;
+    
+    TMR1 = TIMER_VALUE;
+    IFS0bits.T1IF = 0;
+    T1CONbits.TON = 1;
 }
 
 void commandParserTasks(void) {
     if(U1STAbits.OERR) U1STAbits.OERR = 0;
     if(DataRdyUART1()) {
         _decodeCommand(_waitAndReceive());
+    }
+    
+    // En el desborde del timer enviamos los datos
+    if(IFS0bits.T1IF) {
+        _constructDataString(buffer);
+        WriteUART1(ACK);
+        putsUART1((unsigned int *)buffer);
+        WriteUART1('\0');
+        
+        TMR1 = TIMER_VALUE;
+        IFS0bits.T1IF = 0;
     }
 }
 
@@ -120,11 +147,11 @@ float get5VVoltage() {
 }
 
 /**
- * Corriente de la línea de 5V en miliamperes
- * @return Corriente de la línea de 5V en miliamperes
+ * Corriente de la línea de 5V en amperes
+ * @return Corriente de la línea de 5V en amperes
  */
-uint16_t get5VCurrent() {
-    return (uint16_t)((((float)getMatchedCurrentADCValue(aux5VStatus.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR);
+float get5VCurrent() {
+    return (((float)getMatchedCurrentADCValue(aux5VStatus.current))*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -136,11 +163,11 @@ float get5VPower() {
 }
 
 /**
- * Corriente límite de la línea de 5V en miliamperes
- * @return Corriente límite de la línea de 5V en miliamperes
+ * Corriente límite de la línea de 5V en amperes
+ * @return Corriente límite de la línea de 5V en amperes
  */
-uint16_t get5VCurrentLimit() {
-    return (uint16_t)((((float)aux5VStatus.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR)*1000.0);
+float get5VCurrentLimit() {
+    return ((float)aux5VStatus.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -152,11 +179,11 @@ float get3V3Voltage() {
 }
 
 /**
- * Corriente de la línea de 3.3V en miliamperes
- * @return Corriente de la línea de 3.3V en miliamperes
+ * Corriente de la línea de 3.3V en amperes
+ * @return Corriente de la línea de 3.3V en amperes
  */
-uint16_t get3V3Current() {
-    return (uint16_t)((((float)getMatchedCurrentADCValue(aux3V3Status.current))*((ADC_VREF*1000.0)/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR);
+float get3V3Current() {
+    return (((float)getMatchedCurrentADCValue(aux3V3Status.current))*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -168,28 +195,18 @@ float get3V3Power() {
 }
 
 /**
- * Corriente límite de la línea de 3.3V en miliamperes
- * @return Corriente límite de la línea de 3.3V en miliamperes
+ * Corriente límite de la línea de 3.3V en amperes
+ * @return Corriente límite de la línea de 3.3V en amperes
  */
-uint16_t get3V3CurrentLimit() {
-    return (uint16_t)((((float)aux3V3Status.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR)*1000.0);
+float get3V3CurrentLimit() {
+    return ((float)aux3V3Status.currentLimit*(ADC_VREF / (float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR;
 }
 
 void _constructDataString(char *buffer) {
-    sprintf(buffer, "%.2f;", getBuckVoltage());
-    sprintf(buffer, "%.2f;", getBuckCurrent());
-    sprintf(buffer, "%.2f;", getBuckPower());
-    sprintf(buffer, "%.2f;", getBuckCurrentLimit());
-    
-    sprintf(buffer, "%.2f;", get5VVoltage());
-    sprintf(buffer, "%03d;", get5VCurrent());
-    sprintf(buffer, "%.2f;", get5VPower());
-    sprintf(buffer, "%03d;", get5VCurrentLimit());
-    
-    sprintf(buffer, "%.2f;", get3V3Voltage());
-    sprintf(buffer, "%03d;", get3V3Current());
-    sprintf(buffer, "%.2f;", get3V3Power());
-    sprintf(buffer, "%03d", get3V3CurrentLimit());
+    sprintf(buffer, "%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f", 
+            getBuckVoltage(), getBuckCurrent(), getBuckPower(), getBuckCurrentLimit(),
+            get5VVoltage(), get5VCurrent(), get5VPower(), get5VCurrentLimit(),
+            get3V3Voltage(), get3V3Current(), get3V3Power(), get3V3CurrentLimit());
 }
 
 void _decodeCommand(uint16_t command){
@@ -221,7 +238,7 @@ void _decodeCommand(uint16_t command){
             
         case GET_BUCK_POWER:
             WriteUART1(ACK);
-            sprintf(buffer, "%.2f", buckStatus.averagePower);
+            sprintf(buffer, "%.2f", getBuckPower());
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
@@ -360,70 +377,13 @@ void _decodeCommand(uint16_t command){
             
         case GET_STATUS:
             WriteUART1(ACK);
-            buffer[0] = 0;
-            if(buckStatus.overCurrent || aux5VStatus.overCurrent
-                    || aux3V3Status.overCurrent) {
-                a = 1;
-            }
-            else if(buckStatus.currentLimitFired || aux5VStatus.currentLimitFired
-                    || aux3V3Status.currentLimitFired) {
-                a = 2;
-            }
-            else {
-                a = 0;
-            }
             
-            // Ningun error encontrado
-            if(a == 0) {
-                putsUART1((unsigned int *)"Sin error");
-                WriteUART1('\0');
-                return;
-            }
-            // Damos prioridad si hay cortocircuito
-            else if(a == 1) {
-                putsUART1((unsigned int *)"Cortocircuito en\n");
-                if(buckStatus.overCurrent){
-                    strcat(buffer, "B1,");
-                }
-                if(aux5VStatus.overCurrent) {
-                    strcat(buffer, "5V,");
-                }
-                if(aux3V3Status.overCurrent) {
-                    strcat(buffer, "3.3V,");
-                }
-                // Centramos la segunda linea agregando espacio
-                c = (16 - strlen(buffer))/2;
-                for(b = 17, c = b + c; b < c; ++b) {
-                    buffer[b] = ' ';
-                }
-                buffer[++b] = '\0';
-                
-                // Borramos la ultima coma
-                buffer[strlen(buffer)-1] = '\0';
-            }
-            // Sobrecorriente
-            else if(a == 2) {
-                putsUART1((unsigned int *)"Corriente superada\nen ");
-                if(buckStatus.currentLimitFired){
-                    strcat(buffer, "B1,");
-                }
-                if(aux5VStatus.currentLimitFired) {
-                    strcat(buffer, "5V,");
-                }
-                if(aux3V3Status.currentLimitFired) {
-                    strcat(buffer, "3.3V,");
-                }
-                // Centramos la segunda linea agregando espacio
-                c = (16 - strlen(buffer))/2;
-                for(b = 17, c = b + c; b < c; ++b) {
-                    buffer[b] = ' ';
-                }
-                buffer[++b] = '\0';
-                
-                // Borramos la ultima coma
-                buffer[strlen(buffer)-1] = '\0';
-            }
-            putsUART1((unsigned int *)buffer);
+            a = 0;
+            a = buckStatus.currentLimitFired ? a | (1 << 0) : a;
+            a = aux5VStatus.currentLimitFired ? a | (1 << 1) : a;
+            a = aux3V3Status.currentLimitFired ? a | (1 << 2) : a;
+            
+            WriteUART1((uint8_t)a);
             WriteUART1('\0');
             break;
             
@@ -440,6 +400,18 @@ void _decodeCommand(uint16_t command){
             putsUART1((unsigned int *)buffer);
             break;
                     
+        case GET_BUCK_KP:
+            sprintf(buffer, "%d", buckStatus.PID.kp);
+            putsUART1((unsigned int *)buffer);
+            WriteUART1('\0');
+            break;
+            
+        case GET_BUCK_KI:
+            sprintf(buffer, "%d", buckStatus.PID.ki);
+            putsUART1((unsigned int *)buffer);
+            WriteUART1('\0');
+            break;
+        
         default:
             WriteUART1(NACK);
             break;

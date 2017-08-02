@@ -4,8 +4,12 @@
 #include <stdint.h>
 #include "smps.h"
 
+// ~75ms
+#define TIMER_VALUE                     45000
+
 #define TIMEOUT                         10000
 #define ACK                             0x06
+#define ACK_ERROR                       0x01
 #define NACK                            0xFF
 
 #define SET_BUCK_VOLTAGE                1
@@ -36,6 +40,8 @@
 #define GET_STATUS                      21
 #define GET_BUCK_SETPOINT               22
 #define GET_ALL_STRING                  23
+#define GET_BUCK_KP                     25
+#define GET_BUCK_KI                     26
 
 #define SHUTDOWN                        24
 
@@ -48,14 +54,14 @@ float getBuckPower();
 float getBuckCurrentLimit();
 
 float get5VVoltage();
-uint16_t get5VCurrent();
+float get5VCurrent();
 float get5VPower();
-uint16_t get5VCurrentLimit();
+float get5VCurrentLimit();
 
 float get3V3Voltage();
-uint16_t get3V3Current();
+float get3V3Current();
 float get3V3Power();
-uint16_t get3V3CurrentLimit();
+float get3V3CurrentLimit();
 
 void _constructDataString(char *buffer);
 
