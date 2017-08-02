@@ -61,10 +61,17 @@ static const int16_t adcCurrentErrorTable[][2] = {
     { 1023/2, 0}
 };
 
+static volatile uint16_t buffer[2048] = {0};
+static volatile uint16_t counter = 0;
+
 // Estados de las salidas
 PowerSupplyStatus buckStatus;
 PowerSupplyStatus aux5VStatus;
 PowerSupplyStatus aux3V3Status;
+
+void __attribute__((__interrupt__, no_auto_psv)) _AD1Interrupt(void) {
+    IFS0bits.ADCIF = 0;
+}
 
 /**
  * Interrupción del filtro digital 0. Corresponde a AN0 -> Buck current.
@@ -76,22 +83,7 @@ PowerSupplyStatus aux3V3Status;
  * 
  *  350ns * 16 = 5.6us
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {    
-    // Verificamos que no haya exceso de corriente
-    #ifdef ENABLE_CURRENT_PROTECTION
-    if(BUCK_CURRENT_ADC_BUFFER > BUCK_MAX_CURRENT){
-        buckEmergency();
-        buckStatus.overCurrent = 1;
-        IFS11bits.ADFLTR0IF = 0;
-        return;
-    }
-    else if(BUCK_CURRENT_ADC_BUFFER > buckStatus.currentLimit) {
-        buckEmergency();
-        buckStatus.currentLimitFired = 1;
-        IFS11bits.ADFLTR0IF = 0;
-        return;
-    }
-    #endif
+void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
     buckStatus.current = BUCK_CURRENT_ADC_BUFFER;
     IFS11bits.ADFLTR0IF = 0;
 }
@@ -113,6 +105,15 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
     
     buckStatus.PID.measuredOutput = BUCK_VOLTAGE_ADC_BUFFER;
     buckStatus.outputVoltage = BUCK_VOLTAGE_ADC_BUFFER;
+
+    /*
+    if(counter < 2048) {
+        buffer[counter++] = BUCK_VOLTAGE_ADC_BUFFER;
+    }
+    else {
+        FAULT_LAT = !FAULT_LAT;
+    }*/
+    
     if(buckStatus.enablePID) {
         output = myPI(&buckStatus.PID);
 
@@ -137,20 +138,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
 /**
  * interrupción del canal AN2 -> 5V current
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {
-    if(CURRENT_5V_ADC_BUFFER > MAX_CURRENT_5V){
-        auxEmergency();
-        aux5VStatus.overCurrent = 1;
-        IFS7bits.ADCAN2IF = 0;
-        return;
-    }
-    else if(CURRENT_5V_ADC_BUFFER > aux5VStatus.currentLimit) {
-        auxEmergency();
-        aux5VStatus.currentLimitFired = 1;
-        IFS7bits.ADCAN2IF = 0;
-        return;
-    }
-    
+void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {   
     aux5VStatus.current = CURRENT_5V_ADC_BUFFER;
     IFS7bits.ADCAN2IF = 0;
 }
@@ -173,20 +161,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN3Interrupt(void) {
 /**
  * Interrupción del canal AN7 -> 3.3V current
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {
-    if(CURRENT_3V3_ADC_BUFFER > MAX_CURRENT_3V3){
-        auxEmergency();
-        aux3V3Status.overCurrent = 1;
-        IFS7bits.ADCAN7IF = 0;
-        return;
-    }
-    else if(CURRENT_3V3_ADC_BUFFER > aux3V3Status.currentLimit) {
-        auxEmergency();
-        aux3V3Status.currentLimitFired = 1;
-        IFS7bits.ADCAN7IF = 0;
-        return;
-    }
-    
+void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {    
     aux3V3Status.current = CURRENT_3V3_ADC_BUFFER;
     IFS7bits.ADCAN7IF = 0;
 }
@@ -209,6 +184,37 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN18Interrupt(void) {
 }
 
 /**
+ * Interrupción PWM1 para interrupción FAUL
+ */
+void __attribute__((__interrupt__, no_auto_psv)) _PWM1Interrupt(void) {
+    // Sobre corriente en el buck
+    if(PWMCON1bits.FLTSTAT) {
+        buckStatus.currentLimitFired = 1;
+        FAULT_LAT = 1;
+    }
+    
+    IFS5bits.PWM1IF = 0;
+}
+
+/**
+ * Sobre corriente de la línea de 5V
+ */
+void __attribute__((__interrupt__, no_auto_psv)) _CMP2Interrupt(void) {    
+    auxEmergency();
+    aux5VStatus.currentLimitFired = 1;
+    IFS6bits.AC2IF = 0;
+}
+
+/**
+ * Sobre corriente de la línea de 3.3V
+ */
+void __attribute__((__interrupt__, no_auto_psv)) _CMP3Interrupt(void) {    
+    auxEmergency();
+    aux3V3Status.currentLimitFired = 1;
+    IFS6bits.AC3IF = 0;
+}
+
+/**
  * Inicializa los controladores PID, estructuras del estado de las salidas,
  *  módulo PWM y ADC
  */
@@ -223,7 +229,7 @@ void smpsInit(void){
     buckStatus.PID.integralTerm = 0;
     buckStatus.PID.kp = BUCK_KP;
     buckStatus.PID.ki = BUCK_KI;
-    buckStatus.PID.n = 2;
+    buckStatus.PID.n = 1;
     buckStatus.PID.measuredOutput = 0;
     buckStatus.PID.setpoint = 0;
     buckStatus.duty = BUCK_INITIAL_DUTY_CYCLE;
@@ -275,7 +281,12 @@ void smpsInit(void){
     IOCON1bits.OVRENL = 1;
     
     _initADC();
+    _initComparators();
     _initBuckPWM(&buckStatus);
+    
+    // PWM2 y PWM3 controlados por GPIO y no por el PWM (valor por defecto)
+    IOCON2bits.PENH = IOCON2bits.PENL = 0;
+    IOCON3bits.PENH = IOCON3bits.PENL = 0;
     
     // Enciendo PWM el modulo PWM
     PTCONbits.PTEN = 1;
@@ -283,13 +294,13 @@ void smpsInit(void){
     IOCON1bits.OVRENL = 0;
     
     __delay_us(100);            // Esperamos algunos ciclos para que
-                                //  se estabilize el PWM
+                                //  se estabilice el PWM
     
     // Habilitamos las salidas
     IOCON1bits.PENH = 1;
     IOCON1bits.PENL = 1;
     
-    //setBuckVoltage(0); 
+    setBuckVoltage(6000); 
     auxEnable();
     
     ON_OFF_5V_TRIS = 0;
@@ -336,19 +347,20 @@ void smpsTasks(void) {
 
 void buckEnable() {
     buckStatus.PID.integralTerm = 0;
-    buckStatus.overCurrent = 0;
     buckStatus.currentLimitFired = 0;
     buckStatus.enablePID = 1;
     buckStatus.enabled = 1;
     FAULT_LAT = 0;
+    
+    // Borramos el bit FLTSTAT
+    PWMCON1bits.FLTIEN = 0;
+    PWMCON1bits.FLTIEN = 1;
     
     IOCON1bits.OVRENH = 0; 
     IOCON1bits.OVRENL = 0;
 }
 
 void auxEnable() {    
-    aux5VStatus.overCurrent = 0;
-    aux3V3Status.overCurrent = 0;
     aux5VStatus.currentLimitFired = 0;
     aux3V3Status.currentLimitFired = 0;
     
@@ -391,13 +403,18 @@ void setBuckVoltage(uint16_t voltage) {
  * @param currentLimit límite de corriente en miliamperes
  */
 void setBuckCurrentLimit(uint16_t currentLimit) {
-    // Conversión de corriente de salida a tensión leída en el ADC
+    // Conversión de corriente de salida a tensión en la entrada del comparador
+    //  en milivolts
     float v = (float)BUCK_I_FEEDBACK_FACTOR * (float)currentLimit;
-    buckStatus.currentLimit = (uint16_t)(v*((float)BUCK_ADC_COUNTS/(ADC_VREF*1000.0)));
+    uint16_t ref = (uint16_t)(v * ((float)4096/(ADC_VREF*1000.0)));
     
-    if(buckStatus.currentLimit > BUCK_MAX_CURRENT) {
-        buckStatus.currentLimit = BUCK_MAX_CURRENT;
+    if(ref > BUCK_MAX_CURRENT) {
+        ref = BUCK_MAX_CURRENT;
     }
+    
+    // Calculamos el valor para el DAC del comparador
+    CMP1DACbits.CMREF = ref;
+    buckStatus.currentLimit = ref;
 }
 
 /**
@@ -405,13 +422,18 @@ void setBuckCurrentLimit(uint16_t currentLimit) {
  * @param currentLimit límite de corriente en miliamperes
  */
 void set5VCurrentLimit(uint16_t currentLimit) {
-    // Conversión de corriente de salida a tensión leída en el ADC
+    // Conversión de corriente de salida a tensión en la entrada del comparador
+    //  en milivolts
     float v = (float)AUX_5V_I_FEEDBACK_FACTOR * (float)currentLimit;
-    aux5VStatus.currentLimit = (uint16_t)(v*((float)AUX_ADC_COUNTS/(ADC_VREF*1000.0)));
+    uint16_t ref = (uint16_t)(v * ((float)4096/(ADC_VREF*1000.0)));
     
-    if(aux5VStatus.currentLimit > MAX_CURRENT_5V) {
-        aux5VStatus.currentLimit = MAX_CURRENT_5V;
+    if(ref > MAX_CURRENT_5V) {
+        ref = MAX_CURRENT_5V;
     }
+    
+    // Calculamos el valor para el DAC del comparador
+    CMP2DACbits.CMREF = ref;
+    aux5VStatus.currentLimit = ref;
 }
 
 /**
@@ -419,13 +441,18 @@ void set5VCurrentLimit(uint16_t currentLimit) {
  * @param currentLimit límite de corriente en miliamperes
  */
 void set3V3CurrentLimit(uint16_t currentLimit) {
-    // Conversión de corriente de salida a tensión leída en el ADC
+    // Conversión de corriente de salida a tensión en la entrada del comparador
+    //  en milivolts
     float v = (float)AUX_3V3_I_FEEDBACK_FACTOR * (float)currentLimit;
-    aux3V3Status.currentLimit = (uint16_t)(v*((float)AUX_ADC_COUNTS/(ADC_VREF*1000.0)));
+    uint16_t ref = (uint16_t)(v * ((float)4096/(ADC_VREF*1000.0)));
     
-    if(aux3V3Status.currentLimit > MAX_CURRENT_3V3) {
-        aux3V3Status.currentLimit = MAX_CURRENT_3V3;
+    if(ref > MAX_CURRENT_3V3) {
+        ref = MAX_CURRENT_3V3;
     }
+    
+    // Calculamos el valor para el DAC del comparador
+    CMP3DACbits.CMREF = ref;
+    aux3V3Status.currentLimit = ref;
 }
 
 uint16_t getMatchedVoltageADCValue(uint16_t adcValue) {
@@ -474,7 +501,7 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     //  para evitar cortocircuitos en el buck
     BUCK_PWMH_LAT = BUCK_PWML_LAT = 0;
 
-    PWMCON1bits.FLTIEN = 0;     // Fault Interrupt deshabilitada
+    PWMCON1bits.FLTIEN = 1;     // Fault Interrupt habilitada
     PWMCON1bits.CLIEN = 0;      // Current-limit Interrupt deshabilitada
     PWMCON1bits.TRGIEN = 0;     // No generar interrupción en trigger
     PWMCON1bits.ITB = 1;        // Independent Time Base. En Complementary controlamos
@@ -489,7 +516,11 @@ void _initBuckPWM(PowerSupplyStatus *data) {
                                 //  de tiempo del PWM (no son inmediatos)
     
     FCLCON1 = 0;
-    FCLCON1bits.FLTMOD = 3;
+    FCLCON1bits.IFLTMOD = 0;        // FLTDAT<1:0> mapea los estados de los pines PWMH y PWML
+    FCLCON1bits.CLMOD = 0;          // Current limit deshabilitado
+    FCLCON1bits.FLTSRC = 0b01101;   // Comparador 1 va a la entrada de FAULT
+    FCLCON1bits.FLTPOL = 0;         // FAULT activo alto
+    FCLCON1bits.FLTMOD = 0b00;      // FAULT activado y modo latch
     
     TRIG1 = data->pTrigger;     // Trigger principal
     //STRIG1 = 3000;            // Trigger secundario
@@ -506,12 +537,17 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     IOCON1bits.PMOD = 0;        // PMW1 en modo Complementario (para Buck sincrónico)
     IOCON1bits.SWAP = 1;        // PWMH y PWML a sus respectivas salidas y no al revés
     IOCON1bits.OSYNC = 0;       // Override es asíncrono
+    IOCON1bits.FLTDAT = 0b00;   // PWMH y PWML a 0 en condicion de FAULT
     
     AUXCON1bits.HRPDIS = 0;     // Alta resolucion de periodo
     AUXCON1bits.HRDDIS = 0;     // Alta resolucion de duty
     AUXCON1bits.BLANKSEL = 0;   // Blanking deshabilitado
     AUXCON1bits.CHOPHEN = 0;    // Chop deshabilitado en PWMH
     AUXCON1bits.CHOPLEN = 0;    // Chop deshabilitado en PWML
+    
+    IFS5bits.PWM1IF = 0;        // Interrupción
+    IPC23bits.PWM1IP = 7;
+    IEC5bits.PWM1IE = 1;
 
     /*
      * Período del PWM viene dado por:
@@ -541,10 +577,10 @@ void _initBuckPWM(PowerSupplyStatus *data) {
 
 void _initADC(void) {
     /**
-     * Es importante que todos los cores del ADC esten configurados exactamente
+     * Es importante que todos los cores del ADC estén configurados exactamente
      * igual, su fuente de trigger sea la misma e inicien la conversión al mismo
      * tiempo para poder hacer sampling simultáneo de otro modo el resultado de
-     * la conversión será erroneo debido a un error en el modulo. Copia del errata:
+     * la conversión será erróneo debido a un error en el modulo. Copia del errata:
      * 
      *  When using multiple ADC cores, if one of the
      *  ADC cores completes conversion while other
@@ -584,19 +620,19 @@ void _initADC(void) {
     AUX_3V_CURRENT_TRIS = 1;
     AUX_3V_VOLTAGE_TRIS = 1;
     
-    ANSELAbits.ANSA0 = 1;       // RA0 analogica
-    ANSELAbits.ANSA1 = 1;       // RA1 analogica
-    ANSELAbits.ANSA2 = 1;       // RA2 analogica
-    ANSELBbits.ANSB0 = 1;       // RB0 analogica
-    ANSELBbits.ANSB2 = 1;       // RB2 analogica
-    ANSELBbits.ANSB3 = 1;       // RB3 analogica
+    ANSELAbits.ANSA0 = 1;       // RA0 analógica
+    ANSELAbits.ANSA1 = 1;       // RA1 analógica
+    ANSELAbits.ANSA2 = 1;       // RA2 analógica
+    ANSELBbits.ANSB0 = 1;       // RB0 analógica
+    ANSELBbits.ANSB2 = 1;       // RB2 analógica
+    ANSELBbits.ANSB3 = 1;       // RB3 analógica
     
     ADCON1Lbits.ADSIDL = 0;     // Modulo continua operando en modo IDLE
     ADCON1Hbits.FORM = 0;       // Dato de salida en formato integer (no fractional)
-    ADCON1Hbits.SHRRES = 0b11;  // Resolucion de 12 bits
+    ADCON1Hbits.SHRRES = 0b11;  // Resolución de 12 bits
     
-    ADCON2Lbits.REFCIE = 0;     // Interrupcion para band-gap y reference voltage ready desactivada
-    ADCON2Lbits.REFERCIE = 0;   // Interrupcion para band-gap y reference voltage error desactivada
+    ADCON2Lbits.REFCIE = 0;     // Interrupción para band-gap y reference voltage ready desactivada
+    ADCON2Lbits.REFERCIE = 0;   // Interrupción para band-gap y reference voltage error desactivada
     ADCON2Lbits.EIEN = 0;       // Early interrupt desactivada
     
     ADCON3Lbits.SUSPEND = 0;
@@ -611,10 +647,10 @@ void _initADC(void) {
     ADCON3Hbits.C3EN = 1;       // ADC Core 3 habilitado
     
     // Habilitamos la espera del tiempo de muestreo (requerido por oversampling)
-    ADCON4Lbits.SAMC0EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversion en core 0
-    ADCON4Lbits.SAMC1EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversion en core 1
-    ADCON4Lbits.SAMC2EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversion en core 2
-    ADCON4Lbits.SAMC3EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversion en core 3
+    ADCON4Lbits.SAMC0EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversión en core 0
+    ADCON4Lbits.SAMC1EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversión en core 1
+    ADCON4Lbits.SAMC2EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversión en core 2
+    ADCON4Lbits.SAMC3EN = 1;    // Luego del trigger se espera el tiempo de muestreo antes de iniciar la conversión en core 3
     
     // Todos los cores tienen un divisor 1:2 por lo que el clock en cada
     //  core es de 117.92MHz / 2 = 58.96 Mhz = Tad
@@ -624,30 +660,30 @@ void _initADC(void) {
     //                  = 314 ns = 3.18 MSPS
     // Core 0
     ADCORE0Lbits.SAMC = 0;      // 2 Tad sample time
-    ADCORE0Hbits.RES = 0;       // 12 bit de resolucion
+    ADCORE0Hbits.RES = 0b11;    // 12 bit de resolución
     ADCORE0Hbits.ADCS = 0;      // Divisor 1:2 de clock
     // Core 1
     ADCORE1Lbits.SAMC = 0;      // 2 Tad sample time
-    ADCORE1Hbits.RES = 0;       // 12 bit de resolucion
+    ADCORE1Hbits.RES = 0b11;    // 12 bit de resolución
     ADCORE1Hbits.ADCS = 0;      // Divisor 1:2 de clock
     // Core 2
     ADCORE2Lbits.SAMC = 0;      // 2 Tad sample time
-    ADCORE2Hbits.RES = 0;       // 12 bit de resolucion
+    ADCORE2Hbits.RES = 0b11;    // 12 bit de resolución
     ADCORE2Hbits.ADCS = 0;      // Divisor 1:2 de clock
     // Core 3
     ADCORE3Lbits.SAMC = 0;      // 2 Tad sample time
-    ADCORE3Hbits.RES = 0;       // 12 bit de resolucion
+    ADCORE3Hbits.RES = 0b11;    // 12 bit de resolución
     ADCORE3Hbits.ADCS = 0;      // Divisor 1:2 de clock
     // Shared Core
     ADCON2Hbits.SHRSAMC = 0b0000000000; // Shared ADC 2 Tad sample time
     ADCON2Lbits.SHRADCS = 0b0000000;    // Divisor 1:2 de clock
     
-    ADCON5Hbits.WARMTIME = 15;  // Maximo tiempo de encendido para los cores
-    ADCON5Hbits.SHRCIE = 1;     // Interrupcion de Shared ADC Core ready activada
-    ADCON5Hbits.C0C1E = 1;      // Interrupcion de ADC Core 0 ready activada
-    ADCON5Hbits.C1C1E = 1;      // Interrupcion de ADC Core 1 ready activada
-    ADCON5Hbits.C2C1E = 1;      // Interrupcion de ADC Core 2 ready activada
-    ADCON5Hbits.C3C1E = 1;      // Interrupcion de ADC Core 3 ready activada
+    ADCON5Hbits.WARMTIME = 15;  // Máximo tiempo de encendido para los cores
+    ADCON5Hbits.SHRCIE = 0;     // Interrupción de Shared ADC Core ready desactivada
+    ADCON5Hbits.C0C1E = 0;      // Interrupción de ADC Core 0 ready desactivada
+    ADCON5Hbits.C1C1E = 0;      // Interrupción de ADC Core 1 ready desactivada
+    ADCON5Hbits.C2C1E = 0;      // Interrupción de ADC Core 2 ready desactivada
+    ADCON5Hbits.C3C1E = 0;      // Interrupción de ADC Core 3 ready desactivada
     
     ADMOD0L = 0;                // Canales en modo single-ended y formato unsigned
     ADMOD1L = 0;                // Canales en modo single-ended y formato unsigned
@@ -675,8 +711,8 @@ void _initADC(void) {
     while(!ADCON5Lbits.C0RDY || !ADCON5Lbits.C1RDY || !ADCON5Lbits.C2RDY 
             || !ADCON5Lbits.C3RDY || !ADCON5Lbits.SHRRDY);
     
-    // Calibracion para single-ended
-    ADCAL0Lbits.CAL0EN = 1;     // Habilitamos modo calibracion
+    // Calibración para single-ended
+    ADCAL0Lbits.CAL0EN = 1;     // Habilitamos modo calibración
     ADCAL0Lbits.CAL1EN = 1;
     ADCAL0Hbits.CAL2EN = 1;
     ADCAL0Hbits.CAL3EN = 1;
@@ -686,73 +722,139 @@ void _initADC(void) {
     ADCAL0Hbits.CAL2DIFF = 0;
     ADCAL0Hbits.CAL3DIFF = 0;
     ADCAL1Hbits.CSHRDIFF = 0;
-    ADCAL0Lbits.CAL0RUN = 1;    // Inicio de calibracion
+    ADCAL0Lbits.CAL0RUN = 1;    // Inicio de calibración
     ADCAL0Lbits.CAL1RUN = 1;
     ADCAL0Hbits.CAL2RUN = 1;
     ADCAL0Hbits.CAL3RUN = 1;
     ADCAL1Hbits.CSHRRUN = 1;
     
-    // Esperamos a que la calibracion finalice
+    // Esperamos a que la calibración finalice
     while(!ADCAL0Lbits.CAL0RDY || !ADCAL0Lbits.CAL1RDY || !ADCAL0Hbits.CAL2RDY
             || !ADCAL0Hbits.CAL3RDY || !ADCAL1Hbits.CSHRRDY);
     
-    ADCAL0Lbits.CAL0EN = 0;         // Deshabilitamos modo calibracion
+    ADCAL0Lbits.CAL0EN = 0;         // Deshabilitamos modo calibración
     ADCAL0Lbits.CAL1EN = 0;
     ADCAL0Hbits.CAL2EN = 0;
     ADCAL0Hbits.CAL3EN = 0;
     ADCAL1Hbits.CSHREN = 0;
     
-    // Configuracion de oversampling
+    // Configuración de oversampling
     ADFL0CONbits.FLEN = 0;
     ADFL0CONbits.MODE = 0b00;       // Modo oversampling
     ADFL0CONbits.OVRSAM = 0b001;    // 16x oversampling (2 bit adicionales)
     ADFL0CONbits.FLCHSEL = 0;       // AN0 para el filtro digital 0
-    ADFL0CONbits.IE = 1;            // Interrupcion habilitada
+    ADFL0CONbits.IE = 1;            // Interrupción habilitada
     ADFL0CONbits.FLEN = 1;
     
     ADFL1CONbits.FLEN = 0;
     ADFL1CONbits.MODE = 0b00;       // Modo oversampling
     ADFL1CONbits.OVRSAM = 0b001;    // 16x oversampling (2 bit adicionales)
     ADFL1CONbits.FLCHSEL = 1;       // AN1 para el filtro digital 1
-    ADFL1CONbits.IE = 0;            // Interrupcion habilitada
+    ADFL1CONbits.IE = 1;            // Interrupción habilitada
     ADFL1CONbits.FLEN = 1;
     
     // Interrupciones filtros
-    IFS11bits.ADFLTR0IF = 0;         // Borramos flag de interrupcion
+    IFS11bits.ADFLTR0IF = 0;         // Borramos flag de interrupción
     IFS11bits.ADFLTR1IF = 0;
-    IPC44bits.ADFLTR0IP = 7;         // Prioridad maxima 7 para filter 0 (current buck)
-    IPC45bits.ADFLTR1IP = 6;         // Prioridad 6 para filter 1 (voltage buck)
-    IEC11bits.ADFLTR0IE = 1;         // Habilitamos interrupcion de los filtros
-    IEC11bits.ADFLTR1IE = 1;         // Habilitamos interrupcion de los filtros
+    IPC44bits.ADFLTR0IP = 6;         // Prioridad 6 para filter 0 (current buck)
+    IPC45bits.ADFLTR1IP = 5;         // Prioridad 5 para filter 1 (voltage buck)
+    IEC11bits.ADFLTR0IE = 1;         // Habilitamos interrupción de los filtros
+    IEC11bits.ADFLTR1IE = 1;         // Habilitamos interrupción de los filtros
     
     // Interrupciones de canales
     // AN0 (buck current)
     IFS6bits.ADCAN0IF = 0;
     IEC6bits.ADCAN0IE = 0;
-    IPC27bits.ADCAN0IP = 0;         // Este canal trabaja a traves del filtro unicamente
+    IPC27bits.ADCAN0IP = 0;         // Este canal trabaja a través del filtro únicamente
     
     // AN1 (buck voltage)
     IFS6bits.ADCAN1IF = 0;
     IEC6bits.ADCAN1IE = 0;
-    IPC27bits.ADCAN1IP = 0;         // Este canal trabaja a traves del filtro unicamente
+    IPC27bits.ADCAN1IP = 0;         // Este canal trabaja a través del filtro únicamente
     
     // AN2 (5v current)
     IFS7bits.ADCAN2IF = 0;
     IEC7bits.ADCAN2IE = 1;
-    IPC28bits.ADCAN2IP = 5;
+    IPC28bits.ADCAN2IP = 4;
     
     // AN3 (5v voltage)
     IFS7bits.ADCAN3IF = 0;
     IEC7bits.ADCAN3IE = 1;
-    IPC28bits.ADCAN3IP = 4;
+    IPC28bits.ADCAN3IP = 3;
     
     // AN7 (3.3v current)
     IFS7bits.ADCAN7IF = 0;
     IEC7bits.ADCAN7IE = 1;
-    IPC29bits.ADCAN7IP = 7;
+    IPC29bits.ADCAN7IP = 6;
     
     // AN18 (3.3v voltage)
     IFS10bits.ADCAN18IF = 0;
     IEC10bits.ADCAN18IE = 1;
-    IPC40bits.ADCAN18IP = 6;
+    IPC40bits.ADCAN18IP = 5;
+}
+
+void _initComparators(void) {
+    // Comparador 1 - Corriente buck
+    CMP1CONbits.CMPON = 0;      
+    CMP1CONbits.CMPSIDL = 0;
+    CMP1CONbits.HYSSEL = 0b01;      // Histéresis de 15mV = 15mA
+    CMP1CONbits.FLTREN = 1;         // Filtro digital habilitado
+    CMP1CONbits.FCLKSEL = 1;        // Filtro digital clock desde PWM
+    CMP1CONbits.DACOE = 0;          // Salida del DAC desactivada
+    CMP1CONbits.ALTINP = 0;         // No usamos entradas alternativas
+    CMP1CONbits.INSEL = 0b00;       // CMP1A de entrada positiva
+    CMP1CONbits.EXTREF = 0;         // Avdd de referencia para el DAC
+    CMP1CONbits.HYSPOL = 1;         // Histéresis se aplica al falling edge del comparador
+    CMP1CONbits.CMPPOL = 0;         // Salida no invertida
+    CMP1CONbits.RANGE = 1;
+    
+    // Comparador 2 - Corriente 5V
+    CMP2CONbits.CMPON = 0;      
+    CMP2CONbits.CMPSIDL = 0;
+    CMP2CONbits.HYSSEL = 0b00;      // Sin Histéresis
+    CMP2CONbits.FLTREN = 1;         // Filtro digital habilitado
+    CMP2CONbits.FCLKSEL = 1;        // Filtro digital clock desde PWM
+    CMP2CONbits.DACOE = 0;          // Salida del DAC desactivada
+    CMP2CONbits.ALTINP = 0;         // No usamos entradas alternativas
+    CMP2CONbits.INSEL = 0b00;       // CMP2A de entrada positiva
+    CMP2CONbits.EXTREF = 0;         // Avdd de referencia para el DAC
+    CMP2CONbits.HYSPOL = 1;         // Histéresis se aplica al falling edge del comparador
+    CMP2CONbits.CMPPOL = 0;         // Salida no invertida
+    CMP2CONbits.RANGE = 1;
+    
+    // Comparador 3 - Corriente 3.3V
+    CMP3CONbits.CMPON = 0;      
+    CMP3CONbits.CMPSIDL = 0;
+    CMP3CONbits.HYSSEL = 0b00;      // Sin Histéresis
+    CMP3CONbits.FLTREN = 1;         // Filtro digital habilitado
+    CMP3CONbits.FCLKSEL = 1;        // Filtro digital clock desde PWM
+    CMP3CONbits.DACOE = 0;          // Salida del DAC desactivada
+    CMP3CONbits.ALTINP = 0;         // No usamos entradas alternativas
+    CMP3CONbits.INSEL = 0b11;       // CMP3D de entrada positiva
+    CMP3CONbits.EXTREF = 0;         // Avdd de referencia para el DAC
+    CMP3CONbits.HYSPOL = 1;         // Histéresis se aplica al falling edge del comparador
+    CMP3CONbits.CMPPOL = 0;         // Salida no invertida
+    CMP3CONbits.RANGE = 1;
+    
+    // Interrupciones
+    IEC1bits.AC1IE = 0;             // Este comparador va a la entrada FAULT del modulo PWM
+                                    //  y se genera una interrupción por FAULT
+    
+    IFS6bits.AC2IF = 0;
+    IPC25bits.AC2IP = 7;            // Prioridad máxima
+    IEC6bits.AC2IE = 1;
+    
+    IFS6bits.AC3IF = 0;
+    IPC26bits.AC3IP = 7;            // Prioridad máxima
+    IEC6bits.AC3IE = 1;
+    
+    // Corriente máxima de límite
+    CMP1DACbits.CMREF = BUCK_MAX_CURRENT;
+    CMP2DACbits.CMREF = MAX_CURRENT_5V;
+    CMP3DACbits.CMREF = MAX_CURRENT_3V3;
+    
+    // Encendido de los comparadores
+    CMP1CONbits.CMPON = 0;
+    CMP2CONbits.CMPON = 0;
+    CMP3CONbits.CMPON = 0;
 }

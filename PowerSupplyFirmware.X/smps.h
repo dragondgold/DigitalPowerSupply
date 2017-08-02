@@ -58,14 +58,13 @@ typedef struct {
     
     uint16_t    currentLimit;       // Corriente limite en valor del ADC
     uint16_t    current;            // Corriente actual en valor del ADC
-    uint16_t    outputVoltage;      // Tension de salida en valor del ADC
+    uint16_t    outputVoltage;      // Tensión de salida en valor del ADC
     uint32_t    averagePower;       // Potencia media en valor del ADC
 
     myPIData    PID;                    // Controlador PID
     
     uint16_t    enablePID:1;            // Indica si el PID está habilitado
-    uint16_t    overCurrent:1;          // Indica si hay un exceso de corriente actualmente
-    uint16_t    currentLimitFired:1;    // Indica si se excedio el limite de corriente
+    uint16_t    currentLimitFired:1;    // Indica si se excedió el limite de corriente
     uint16_t    enabled:1;              // Indica si la salida está habilitada o no
     
     // Buffer para calculo de potencia media
@@ -93,6 +92,7 @@ uint16_t getMatchedCurrentADCValue(uint16_t adcValue);
 
 void _initBuckPWM(PowerSupplyStatus *data);
 void _initADC(void);
+void _initComparators(void);
 uint16_t _getMatchedADCValue(uint16_t adcValue, const int16_t table[][2], uint16_t size);
 
 #endif	/* SMPS_H */
