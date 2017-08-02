@@ -26,20 +26,20 @@
 #define ADC_VREF                    3.30
 
 // Parámetros Buck 1
-#define BUCK_DEFAULT_PID_ENABLE     0
+#define BUCK_DEFAULT_PID_ENABLE     1
 #define BUCK_PHASE                  3136    // 300kHz
-#define BUCK_MAX_DUTY_CYCLE         2988    // 95%
+#define BUCK_MAX_DUTY_CYCLE         2822    // 90%
 #define BUCK_INITIAL_DUTY_CYCLE     (BUCK_MAX_DUTY_CYCLE/2)
 #define BUCK_MIN_DUTY_CYCLE         60      // 2%
 #define BUCK_DEAD_TIME              157     // 5%
-#define BUCK_MAX_CURRENT            14894   // 3A
-#define BUCK_KP                     300
-#define BUCK_KI                     4070
+#define BUCK_MAX_CURRENT            3724    // 3A con 12 bit (del comparador)
+#define BUCK_KP                     10
+#define BUCK_KI                     14800
 #define BUCK_PWMH_TRIS              TRISAbits.TRISA4
 #define BUCK_PWML_TRIS              TRISAbits.TRISA3
 #define BUCK_PWMH_LAT               LATBbits.LATB4
 #define BUCK_PWML_LAT               LATBbits.LATB3
-#define BUCK_V_FEEDBACK_FACTOR      0.109
+#define BUCK_V_FEEDBACK_FACTOR      0.107
 #define BUCK_I_FEEDBACK_FACTOR      1.000   // mV/mA
 #define BUCK_ADC_COUNTS             16384   // 14 bits oversampling
 // Este factor permite convertir la multiplicación de tensión*corriente en valores de ADC al valor
