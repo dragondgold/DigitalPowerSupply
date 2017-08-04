@@ -1,8 +1,8 @@
-
 #include <U8g2lib.h>
 #include <EEPROM.h>
 #include <stdio.h>
 #include <string.h>
+#include <PinChangeInterrupt.h>
 
 #define cs                             10
 #define sck                            13
@@ -10,14 +10,17 @@
 #define a0                              9
 #define reset                           8
 #define brightness                      6
+
 #define rightBtn                        4
 #define leftBtn                         3
 #define enterBtn                        2
 #define cancelBtn                      12
 #define fault                           5
+#define powerGood                       7
 
 // List of Commands
 #define ACK                             0x06
+#define ACK_STRING                      0x01
 #define NACK                            0xFF
 
 #define SET_BUCK_VOLTAGE                1
@@ -51,12 +54,15 @@
 
 #define SHUTDOWN                        24
 
-#define TIMEOUT                         10 // timeout for serial port in ms
+#define GET_BUCK_KP                     25
+#define GET_BUCK_KI                     26
+
+#define TIMEOUT                         20 // timeout for serial port in ms
 
 #define NORESPONDE                      "n/r"
 
-#define BUCKVMIN                        1  // 1V min
-#define BUCKVMAX                        25  // 20V max
+#define BUCKVMIN                        1.0  // 1V min
+#define BUCKVMAX                        25.0  // 20V max
 
 #define BUCKCURRENTMIN                  0.05
 #define BUCKCURRENTMAX                  3.0
@@ -67,13 +73,23 @@
 #define I3V3CURRENTMIN                  0.01
 #define I3V3CURRENTMAX                  0.30
 
+#define CONTRAST_MIN                    190
+#define CONTRAST_MAX                    255
+
+
+#define BRIGHTNESS_MIN                  0
+#define BRIGHTNESS_MAX                  255
+
 #define BRIGHTNESS_ADDRESS              0
-#define CONTRAST_ADDRESS                1
-#define PROFILES_START_ADDRRESS         2
+#define CONTRAST_ADDRESS                2
+#define PROFILES_START_ADDRRESS         5
+#define PROFILES_ALLOWED                3
+
+#define OK_BTN                          1
+#define CANCEL_BTN                      2
 
 U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
 
-int timeNow = 0;
 String VBuck= "0.0", IBuck = "0.0",PBuck = "0.0",IBLIM = "0.0";
 String V5V= "0.0", I5V = "0.0",P5V = "0.0",I5VLIM = "0.0";
 String V3V3= "0.0", I3V3 = "0.0",P3V3 = "0.0",I3V3LIM = "0.0";
@@ -81,10 +97,12 @@ String values = "";
 
 int menu = 0;
 bool changeParam =false;
+bool anErrorOcurred = false;
+String errorCode = NORESPONDE;
 
 uint8_t current_selection = 0;
-uint8_t brightnessValue = 100;
-uint8_t contrastValue = 127;
+int brightnessValue = 100;
+int contrastValue = 190;
 bool increase = false;
 bool decrease = false;
 bool modifyingParam = false;
@@ -92,78 +110,124 @@ bool modifyStep = false;
 bool retrySendCommand = false;
 uint8_t stepMultiplier = 1;
 
-float setPointVBuck = 0.0;
-float setPointIBuck = 0.0;
-float setPointI5V = 0.0;
-float setPointI3V3 = 0.0;
+float setPointVBuck = BUCKVMIN;
+float setPointIBuck = BUCKCURRENTMIN;
+float setPointI5V = I5VCURRENTMIN;
+float setPointI3V3 = I3V3CURRENTMIN;
 
-const char *menu_list = "Buck\nProfiles\nDisplay\nAbout";
+uint8_t numberOfProfiles = 0 ; 
+String listOfProfiles = "";
 
-const char *buck_list = "Modify KP\nModify KI";
+// Menu list
+const char *menu_list = 
+          "Buck\n"
+          "Profiles\n"
+          "About";
 
-const char *profile_list = "Save profile\nLoad profile";
+const char *buck_list =
+          "Enable Buck\n"
+          "Enable Aux\n"
+          "Modify KP\n"
+          "Modify KI";
 
-const char *display_list = "Change brightness\nChange contrast";
+const char *profile_list = 
+          "Save current\n"
+          "Load existing\n"
+          "Delete all";
 
+// Prototipes
+void getAllData();
+void showAllData();
 void drawDisplaySettings(uint8_t param);
-void drawHorizontalPorcentageBar(uint8_t var);
+void drawHorizontalPorcentageBar(uint8_t timeNow);
 void setBrightness(uint8_t value);
 String getValue(String data, char separator, int index);
+void createProfile(); 
+void loadProfile(uint8_t profileNumber); 
 uint8_t setCommand(uint8_t command, float value);
 void setCommandWithoutData(uint8_t command);
 String getCommand(uint8_t command);
-void showAllData();
+byte getByteCommand(uint8_t command);
 
 void setup() {
+  while(!Serial);                       // wait until serial ready
+  Serial.begin(115200);                 // start serial
+  Serial.setTimeout(TIMEOUT);           // set timeout         
 
-  while(!Serial);                    // wait until serial ready
-  Serial.begin(115200);              // start serial
-  Serial.setTimeout(TIMEOUT);        // set timeout         
+  pinMode(cancelBtn, INPUT_PULLUP);            // set pin to input
+  pinMode(powerGood, INPUT_PULLUP);            // set pin to input
+  pinMode(fault, INPUT_PULLUP);                // set pin to input
+  pinMode(brightness, OUTPUT);          // sets the pin as output
 
-  pinMode(cancelBtn, INPUT);           // set pin to input
-  digitalWrite(cancelBtn, HIGH);       // turn on pullup resistors only in this pin because all the rest input have external pullups resistors
+  u8g2.begin(/*Select=*/ enterBtn, /*Right/Next=*/ rightBtn, /*Left/Prev=*/ leftBtn, /*Up=*/ A0, /*Down=*/ A3, /*Home/Cancel=*/ cancelBtn); // Btns
 
-  pinMode(brightness, OUTPUT);   // sets the pin as output
-  setBrightness(brightnessValue);
-
-  u8g2.setContrast(contrastValue);
-  
   u8g2.setFont(u8g2_font_6x12_tr);
 
-  u8g2.begin(/*Select=*/ enterBtn, /*Right/Next=*/ rightBtn, /*Left/Prev=*/ leftBtn, /*Up=*/ A0, /*Down=*/ A3, /*Home/Cancel=*/ cancelBtn); // Arduboy 10 (Production)
+  EEPROM.get(BRIGHTNESS_ADDRESS , brightnessValue);
+  EEPROM.get(CONTRAST_ADDRESS , contrastValue);
+  EEPROM.get(PROFILES_START_ADDRRESS , numberOfProfiles);
+  u8g2.setContrast(contrastValue);
+  setBrightness(brightnessValue);
 
+  // Attach the new PinChangeInterrupt and enable event function below
+  attachPCINT(digitalPinToPCINT(fault), showError, CHANGE);
 }
 
 void loop() {
+
+  getAllData();
   u8g2.firstPage();
   do
   {
     showAllData();
   } while (u8g2.nextPage());
-  delay(25);
+  
+  delay(35);
+
+  if(anErrorOcurred){  
+    errorCode = getByteCommand(GET_STATUS);     
+    byte data = (byte)atoi(errorCode.c_str());   
+    String status_buck = "Buck status: ";
+    String status_5V =   "  5V status: ";
+    String status_3V3 =  " 3V3 status: ";
+
+    if (data != 255){
+      if(bitRead(data, 0)){
+        status_buck += "ERROR";
+      }else{
+        status_buck += "OK";
+      }
+  
+      if(bitRead(data, 1)){
+        status_5V += "ERROR";
+      }else{
+        status_5V += "OK";
+      }
+  
+      if(bitRead(data, 2)){
+        status_3V3 += "ERROR";
+      }else{
+        status_3V3 += "OK";
+      }
+    }else{
+      status_buck += NORESPONDE;
+      status_5V += NORESPONDE;
+      status_3V3 += NORESPONDE;
+    }
+    
+    u8g2.userInterfaceMessage(status_buck.c_str(),status_5V.c_str(),status_3V3.c_str(), "  Ok  ");
+    setCommandWithoutData(ENABLE_BUCK);
+    setCommandWithoutData(ENABLE_AUX);  
+  }
+
 }
 
-void serialEvent() {
-  while (Serial.available()) {
-    if(Serial.read() == ACK ){    
-        values = Serial.readStringUntil('\0');  
-        
-        VBuck = getValue(values,";",0);
-        IBuck = getValue(values,";",1);
-        PBuck = getValue(values,";",2);
-        IBLIM = getValue(values,";",3);
-
-        V5V = getValue(values,";",4);
-        I5V = getValue(values,";",5);
-        P5V = getValue(values,";",6);
-        I5VLIM = getValue(values,";",7);
-       
-        V3V3 = getValue(values,";",8);
-        I3V3 = getValue(values,";",9);
-        P3V3 = getValue(values,";",10);
-        I3V3LIM = getValue(values,";",11);
-    } 
-  }    
+void showError(){
+  if(!digitalRead(fault)){  // fault D5
+    anErrorOcurred =true;
+  }else{
+    anErrorOcurred =false;
+  }
 }
 
 void showAllData(){
@@ -175,7 +239,6 @@ void showAllData(){
     u8g2.drawStr( 49, 8, ("5V"));
     u8g2.drawStr( 85, 8, ("B1"));
  
-      
     u8g2.drawStr( 110, 20, ("V"));
     u8g2.drawStr( 110, 33, ("A"));
     u8g2.drawStr( 110, 46, ("W"));
@@ -256,6 +319,9 @@ void showAllData(){
         changeParam = !changeParam;
         modifyStep = false;
         modifyingParam =true;
+        //setPointVBuck =
+        //setPointVBuck
+        
       }else{
         modifyingParam =false;
         modifyStep =true;
@@ -272,20 +338,15 @@ void showAllData(){
     
     switch(menu){
       case 0:
-          /*
-          u8g2.setColorIndex(0);
-          u8g2.drawRBox(108,1,9,9,2);
-          u8g2.setColorIndex(1);
-          u8g2.drawStr( 110, 9, "M");
-          */
+
         break;
       case 1:     // VB1
         if(changeParam){
           if(increase){
-            setPointVBuck += 0.1 * stepMultiplier; 
+            setPointVBuck += 0.10 * stepMultiplier; 
           }
           if(decrease){
-            setPointVBuck -= 0.1 * stepMultiplier; 
+            setPointVBuck -= 0.10 * stepMultiplier; 
           }
           if(setPointVBuck > BUCKVMAX){
             setPointVBuck = BUCKVMAX;
@@ -294,7 +355,8 @@ void showAllData(){
             setPointVBuck = BUCKVMIN;
           }
 
-          if(increase || decrease || retrySendCommand ){
+          if(increase || decrease || retrySendCommand || !changeParam ){
+            delay(50);
             if(setCommand(SET_BUCK_VOLTAGE, setPointVBuck)){
               retrySendCommand =false;
             }else{
@@ -318,10 +380,10 @@ void showAllData(){
         if(changeParam){
 
           if(increase){
-            setPointIBuck += 0.01 * stepMultiplier; 
+            setPointIBuck += 0.010 * stepMultiplier; 
           }
           if(decrease){
-            setPointIBuck -= 0.01 * stepMultiplier; 
+            setPointIBuck -= 0.010 * stepMultiplier; 
           }
           if(setPointIBuck > BUCKCURRENTMAX){
             setPointIBuck = BUCKCURRENTMAX;
@@ -335,7 +397,7 @@ void showAllData(){
               retrySendCommand =false;
             }else{
               retrySendCommand =true;
-            }     
+            }   
           }
 
           char buffer[4]; 
@@ -353,10 +415,10 @@ void showAllData(){
         if(changeParam){
 
           if(increase){
-            setPointI5V += 0.01 * stepMultiplier; 
+            setPointI5V += 0.010 * stepMultiplier; 
           }
           if(decrease){
-            setPointI5V -= 0.01 * stepMultiplier; 
+            setPointI5V -= 0.010 * stepMultiplier; 
           }
           if(setPointI5V > I5VCURRENTMAX){
             setPointI5V = I5VCURRENTMAX;
@@ -388,10 +450,10 @@ void showAllData(){
         if(changeParam){
 
           if(increase){
-            setPointI3V3 += 0.01 * stepMultiplier; 
+            setPointI3V3 += 0.010 * stepMultiplier; 
           }
           if(decrease){
-            setPointI3V3 -= 0.01 * stepMultiplier; 
+            setPointI3V3 -= 0.010 * stepMultiplier; 
           }
           if(setPointI3V3 > I3V3CURRENTMAX){
             setPointI3V3 = I3V3CURRENTMAX;
@@ -419,61 +481,70 @@ void showAllData(){
           u8g2.drawRFrame(2,50,33,12,3); 
         }
         break; 
-    } 
-}
-
-void showMenu(){
-      uint8_t current_selection_main_menu = 1;
-      while(current_selection_main_menu){
-        current_selection_main_menu = u8g2.userInterfaceSelectionList(
-                                        "SMPS NXT MENU",
-                                        current_selection_main_menu, 
-                                        menu_list);
-        current_selection = current_selection_main_menu;
-        switch(current_selection_main_menu){            
-          case 1:
-            current_selection = u8g2.userInterfaceSelectionList(
-                                "Buck",
-                                1, 
-                                buck_list);
-            break;
-          case 2:
-            while(current_selection){
-                current_selection = u8g2.userInterfaceSelectionList(
-                                "Profiles",
-                                1, 
-                                profile_list);
-                if(current_selection == 1){ // change brightness
-                   
-                }else if(current_selection == 2){ // change contrast
-                
-                }   
-            }                 
-            break;
-          case 3:
-            while(current_selection){
-              current_selection = u8g2.userInterfaceSelectionList(
-                                  "Display",
-                                  1, 
-                                  display_list);
-              drawDisplaySettings(current_selection);                   
-            }          
-            break;                  
-          case 4:
-
-            break;                
-      }            
     }
 }
 
+void showMenu(){
+    uint8_t current_selection_main_menu = 1;
+    while(current_selection_main_menu){
+      current_selection_main_menu = u8g2.userInterfaceSelectionList(
+                                      "SMPS NXT MENU",
+                                      current_selection_main_menu, 
+                                      menu_list);
+      current_selection = current_selection_main_menu;
+      switch(current_selection_main_menu){            
+        case 1:
+          current_selection = u8g2.userInterfaceSelectionList(
+                              "Buck",
+                              1, 
+                              buck_list);
+          switch(current_selection){
+            case 1:   // enable buck 
+              setCommandWithoutData(ENABLE_BUCK); 
+              break;
+            case 2:   // enable aux
+              setCommandWithoutData(ENABLE_AUX); 
+              break;
+            case 3:   //change kp
+              break;
+            case 4:   //change ki
+              break;                                      
+          }
+          break;
+        case 2:
+          while(current_selection){
+              current_selection = u8g2.userInterfaceSelectionList(
+                              "Profiles",
+                              1, 
+                              profile_list);
+              switch(current_selection){
+                case 1:   // Save profile
+                  createProfile(); 
+                  break;
+                case 2:   // Load profile
+                  loadProfile(showProfiles());
+                  break;
+                case 3:   // Delete all
+                  deleteAllProfiles();
+                  break;
+                case 4:   
+                  break;                                      
+              } 
+          }                 
+          break;
+        case 3:  // About
+        
+          break;                
+    }            
+  }
+}
+
+/*
 void drawDisplaySettings(uint8_t param){ // param = 1 -> Brightness | param = 2 -> Contrast
       
       if(!param){
         return -1; 
       }
-      
-      //EEPROM.get(BRIGHTNESS_ADDRESS , brillo);
-      //EEPROM.get(CONTRAST_ADDRESS, contraste);
 
       uint8_t heigthFrame = 14;
       uint8_t key =  1;
@@ -488,17 +559,22 @@ void drawDisplaySettings(uint8_t param){ // param = 1 -> Brightness | param = 2 
           break;
       }
 
-      Serial.print("param: " + String(param) + "\n");
-      while(key != 83 && key != 80){
+      while(key != U8X8_MSG_GPIO_MENU_SELECT && key != U8X8_MSG_GPIO_MENU_HOME){
         key = u8g2.getMenuEvent();
         if(key == U8X8_MSG_GPIO_MENU_NEXT){
             switch(param){
               case 1:
                 brightnessValue += 4;
+                if(brightnessValue >= BRIGHTNESS_MAX){
+                  brightnessValue = BRIGHTNESS_MAX;
+                }
                 setBrightness(brightnessValue);
                 break;
               case 2:
                 contrastValue += 2;
+                if(contrastValue >= CONTRAST_MAX){
+                  contrastValue = CONTRAST_MAX;
+                }
                 u8g2.setContrast(contrastValue);
                 break;
             }
@@ -507,21 +583,26 @@ void drawDisplaySettings(uint8_t param){ // param = 1 -> Brightness | param = 2 
               case 1:
                 brightnessValue -= 4;
                 setBrightness(brightnessValue);
+                if(brightnessValue <= BRIGHTNESS_MIN){
+                  brightnessValue = BRIGHTNESS_MIN;
+                }
                 break;
               case 2:
                 contrastValue -= 2;
-                
+                if(contrastValue <= CONTRAST_MIN){
+                  contrastValue = CONTRAST_MIN;
+                }                
                 u8g2.setContrast(contrastValue);
                 break;
             }
         }else if(key == U8X8_MSG_GPIO_MENU_SELECT){
             switch(param){
               case 1:
-                brightnessValue = initialValue;
+                EEPROM.put(BRIGHTNESS_ADDRESS , brightnessValue);
                 setBrightness(brightnessValue);
                 break;
               case 2:
-                contrastValue = initialValue;
+                EEPROM.put(CONTRAST_ADDRESS , contrastValue);
                 u8g2.setContrast(contrastValue);
                 break;
             }
@@ -553,8 +634,8 @@ void drawDisplaySettings(uint8_t param){ // param = 1 -> Brightness | param = 2 
               break;         
             case 2: // CONTRASTE
               u8g2.setCursor(1, heigthFrame-4);
-              u8g2.print("Contrast = " + String(contrastValue*100/256) + "%");              
-              drawHorizontalPorcentageBar(contrastValue);
+              u8g2.print("Contrast = " + String((contrastValue-CONTRAST_MIN)*100/(CONTRAST_MAX - CONTRAST_MIN)) + "%");              
+              drawHorizontalPorcentageBar((contrastValue - CONTRAST_MIN) * 255/(CONTRAST_MAX - CONTRAST_MIN));
               break;               
           }
 
@@ -563,27 +644,219 @@ void drawDisplaySettings(uint8_t param){ // param = 1 -> Brightness | param = 2 
   }
 }
 
-void drawHorizontalPorcentageBar(uint8_t var){
+void drawHorizontalPorcentageBar(uint8_t timeNow){
   u8g2.setColorIndex(1);
   u8g2.drawRFrame(12,20,101,16,4);
-  u8g2.drawBox(13,21, var*100/256,14);
+  u8g2.drawBox(13,21, timeNow*100/256,14);
+}
+*/
+
+void getAllData(){
+    String values = getCommand(GET_ALL_STRING);
+    if(values !=  NORESPONDE){
+      VBuck = getValue(values,';',0);
+      IBuck = getValue(values,';',1);
+      PBuck = getValue(values,';',2);
+      IBLIM = getValue(values,';',3);
+  
+      V5V = getValue(values,';',4);
+      I5V = getValue(values,';',5);
+      P5V = getValue(values,';',6);
+      I5VLIM = getValue(values,';',7);
+     
+      V3V3 = getValue(values,';',8);
+      I3V3 = getValue(values,';',9);
+      P3V3 = getValue(values,';',10);
+      I3V3LIM = getValue(values,';',11);      
+    }
 }
 
 String getValue(String data, char separator, int index)
 {
-  int found = 0;
-  int strIndex[] = {0, -1};
-  int maxIndex = data.length()-1;
+    int found = 0;
+    int strIndex[] = { 0, -1 };
+    int maxIndex = data.length() - 1;
 
-  for(int i=0; i<=maxIndex && found<=index; i++){
-    if(data.charAt(i)==separator || i==maxIndex){
-        found++;
-        strIndex[0] = strIndex[1]+1;
-        strIndex[1] = (i == maxIndex) ? i+1 : i;
+    for (int i = 0; i <= maxIndex && found <= index; i++) {
+        if (data.charAt(i) == separator || i == maxIndex) {
+            found++;
+            strIndex[0] = strIndex[1] + 1;
+            strIndex[1] = (i == maxIndex) ? i+1 : i;
+        }
     }
-  }
+    return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
+}
 
-  return found>index ? data.substring(strIndex[0], strIndex[1]) : "";
+uint8_t showProfiles(){
+    // save profiles in listOfProfiles
+    listOfProfiles = "";
+    Serial.print(String(numberOfProfiles));
+    if(numberOfProfiles > 0){
+      for(uint8_t n = 0; n < numberOfProfiles ; n++){
+        uint8_t startAddr = PROFILES_START_ADDRRESS + 1 +  n*sizeof(float)*4;
+        float vBuck = 0.0;
+        float iBuck = 0.0;
+        float i5V = 0.0;
+        float i3V3 = 0.0;
+    
+        EEPROM.get(startAddr,                   vBuck);
+        EEPROM.get(startAddr+sizeof(float),     iBuck);
+        EEPROM.get(startAddr+sizeof(float)*2,   i5V);
+        EEPROM.get(startAddr+sizeof(float)*3,   i3V3);
+        listOfProfiles += String(vBuck) + " " + String(iBuck)+ " " + String(i5V) +" " +  String(i3V3);
+        if(n != (numberOfProfiles -1) ){
+          listOfProfiles += "\n";     
+        }
+      }
+      uint8_t selection = u8g2.userInterfaceSelectionList(
+                          " List of profiles \n  VB   IB  I5V  I3V3  ",
+                          1, 
+                          listOfProfiles.c_str());
+      if(!selection ){// cancel 
+        selection = 255;                   
+      }else{
+        selection--;
+      }
+      return selection;
+    }else{
+      u8g2.userInterfaceMessage("", "No profiles created" ," " , " Ok ");
+      return 255;
+    }
+}
+
+void createProfile() 
+{  
+    if(numberOfProfiles < PROFILES_ALLOWED){
+      saveProfile();
+    }else{
+      overwriteProfile(showProfiles());
+    }
+}
+
+void loadProfile(uint8_t profileNumber) 
+{
+    if(profileNumber == 255){
+     return 0;
+    }  
+    uint8_t startAddr = PROFILES_START_ADDRRESS + 1 +  profileNumber*sizeof(float)*4;
+    float vBuck = 0.0;
+    float iBuck = 0.0;
+    float i5V = 0.0;
+    float i3V3 = 0.0;
+
+    EEPROM.get(startAddr,                   vBuck);
+    EEPROM.get(startAddr+sizeof(float),     iBuck);
+    EEPROM.get(startAddr+sizeof(float)*2,   i5V);
+    EEPROM.get(startAddr+sizeof(float)*3,   i3V3);
+
+    // Check for invalid parameters. This happens when trying to load
+    //  a profile that was never saved
+    if(isnan(setPointVBuck)){
+      vBuck = BUCKVMIN;
+    }
+    if(isnan(setPointIBuck)){
+      iBuck = BUCKCURRENTMIN;
+    }
+    if(isnan(setPointI5V)){
+      i5V = I5VCURRENTMIN;
+    }
+    if(isnan(setPointI3V3)){
+      i3V3 = I3V3CURRENTMIN;
+    }
+
+    String profileName1 =  "B:"+ String(vBuck) + "V " + String(iBuck)+ "A";
+    String profileName2 =  "5V:" + String(i5V) + "A 3V3:" + String(i3V3) + "A ?";  
+    uint8_t selection =  u8g2.userInterfaceMessage("Are you sure to load", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
+  
+    switch(selection){
+      case OK_BTN:
+        setPointVBuck = vBuck;
+        setPointIBuck = iBuck;
+        setPointI5V = i5V;
+        setPointI3V3 = i3V3;
+
+        setCommand(SET_BUCK_VOLTAGE,          setPointVBuck);
+        setCommand(SET_BUCK_CURRENT_LIMIT,    setPointIBuck);
+        setCommand(SET_5V_CURRENT_LIMIT,      setPointI5V);
+        setCommand(SET_3V3_CURRENT_LIMIT,     setPointI3V3);
+  
+        u8g2.userInterfaceMessage("Profile loaded ", "correctly!","", " Ok ");
+        break;
+      case CANCEL_BTN:
+  
+        break;
+    }
+}
+
+
+void saveProfile(){
+
+  numberOfProfiles++;
+  uint8_t startAddr = PROFILES_START_ADDRRESS + 1 + numberOfProfiles * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
+  String profileName1 =  "B:"+ String(setPointVBuck) + "V " + String(setPointIBuck)+ "A";
+  String profileName2 =  "5V:" + String(setPointI5V) + "A 3V3:" + String(setPointI3V3) + "A ?";  
+  uint8_t selection =  u8g2.userInterfaceMessage("Add new profile", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
+  switch(selection){
+    case OK_BTN:
+      EEPROM.put(startAddr,                   setPointVBuck);
+      EEPROM.put(startAddr+sizeof(float),     setPointIBuck);
+      EEPROM.put(startAddr+sizeof(float)*2,   setPointI5V);
+      EEPROM.put(startAddr+sizeof(float)*3,   setPointI3V3);
+      EEPROM.put(PROFILES_START_ADDRRESS,   numberOfProfiles);
+
+      u8g2.userInterfaceMessage("Profile saved ", "correctly!","", " Ok ");
+      break;
+    case CANCEL_BTN:
+      numberOfProfiles--;
+      break;
+  }
+}
+
+void overwriteProfile(uint8_t order){
+  if(order == 255){
+    return 0;
+  }
+  uint8_t startAddr = PROFILES_START_ADDRRESS + 1 + order * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
+
+  float vBuck = 0.0;
+  float iBuck = 0.0;
+  float i5V = 0.0;
+  float i3V3 = 0.0;
+
+  EEPROM.get(startAddr,                   vBuck);
+  EEPROM.get(startAddr+sizeof(float),     iBuck);
+  EEPROM.get(startAddr+sizeof(float)*2,   i5V);
+  EEPROM.get(startAddr+sizeof(float)*3,   i3V3);
+
+  String profileName1 =  "B:"+ String(vBuck) + "V " + String(iBuck)+ "A";
+  String profileName2 =  "5V:" + String(i5V) + "A 3V3:" + String(i3V3) + "A ?";  
+  uint8_t selection =  u8g2.userInterfaceMessage(" Overwrite? ", profileName1.c_str() ,profileName2.c_str() , " Ok \n Cancel ");
+
+  switch(selection){
+    case OK_BTN:
+      EEPROM.put(startAddr,                   setPointVBuck);
+      EEPROM.put(startAddr+sizeof(float),     setPointIBuck);
+      EEPROM.put(startAddr+sizeof(float)*2,   setPointI5V);
+      EEPROM.put(startAddr+sizeof(float)*3,   setPointI3V3);
+      u8g2.userInterfaceMessage("Profile overwrited ", "correctly!","", " Ok ");
+      break;
+    case CANCEL_BTN:
+
+      break;
+  }
+}
+
+void deleteAllProfiles(){
+  if(!numberOfProfiles){
+    u8g2.userInterfaceMessage("", "No profiles created" ," " , " Ok ");
+  }else{
+    uint8_t selection = u8g2.userInterfaceMessage("Are you sure to ", "delete all existing"," profiles? ", " Ok \n Cancel");
+    if(selection == OK_BTN){
+        EEPROM.put(PROFILES_START_ADDRRESS,   0);
+        uint8_t selection = u8g2.userInterfaceMessage("Profiles deleted ", "sucessfully","", " Ok ");
+        numberOfProfiles = 0;
+    }    
+  }
 }
 
 void setBrightness(uint8_t value){
@@ -591,9 +864,12 @@ void setBrightness(uint8_t value){
 }
 
 uint8_t setCommand(uint8_t command, float value){
-  Serial.write(command); 
-  timeNow = millis(); 
-  while( Serial.available() == 0 && (millis() - timeNow) <= TIMEOUT);
+  Serial.write(command);  
+  uint8_t counter = 0;
+  while(counter <= TIMEOUT &&  Serial.available() == 0){
+     delayMicroseconds(1000);
+     counter++;
+  }
   if(Serial.read() == ACK ){    
     Serial.print(value,2);
     Serial.write('\0');
@@ -603,9 +879,12 @@ uint8_t setCommand(uint8_t command, float value){
 }
 
 void setCommandWithoutData(uint8_t command){
-  Serial.write(command); 
-  timeNow = millis(); 
-  while( Serial.available() == 0 && (millis() - timeNow) <= TIMEOUT);
+  Serial.write(command);
+  uint8_t counter = 0;
+  while(counter <= TIMEOUT &&  Serial.available() == 0){
+     delayMicroseconds(1000);
+     counter++;
+  }
   if(Serial.read() == ACK ){    
       
   } 
@@ -613,8 +892,12 @@ void setCommandWithoutData(uint8_t command){
 
 String getCommand(uint8_t command){
   Serial.write(command);
-  timeNow = millis();
-  while(Serial.available() == 0 && (millis() - timeNow) <= TIMEOUT); 
+  uint8_t counter = 0;
+  //timeNow = micros()*1000;
+  while(counter <= 100 &&  Serial.available() == 0){
+     delayMicroseconds(1000);
+     counter++;
+  }
   if(Serial.read()== ACK ){
      return Serial.readStringUntil('\0');
   } else{
@@ -622,3 +905,19 @@ String getCommand(uint8_t command){
   }
 }
 
+byte getByteCommand(uint8_t command){
+  Serial.write(command);
+  uint8_t counter = 0;
+  //timeNow = micros()*1000;
+  while(counter <= 100 &&  Serial.available() == 0){
+     delayMicroseconds(1000);
+     counter++;
+  }
+  if(Serial.read()== ACK ){
+     byte a[1];
+     Serial.readBytes(a, 1);
+     return a[0];
+  } else{
+     return 255;
+  }
+}

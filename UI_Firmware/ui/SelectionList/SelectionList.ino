@@ -153,14 +153,14 @@
 
 // End of constructor list
 
-#define cs                10
-#define sck               13
-#define mosi              11
-#define a0                9
-#define reset             8
-#define brightness        6
+#define cs                             10
+#define sck                            13
+#define mosi                           11
+#define a0                              9
+#define reset                           8
+#define brightness                      6
 
-U8G2_ST7565_NHD_C12864_F_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
+U8G2_ST7565_NHD_C12864_1_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
 
 void setup(void) {
   
@@ -172,12 +172,14 @@ void setup(void) {
   
   // Arduboy
   //u8g2.begin(/*Select=*/ A0, /*Right/Next=*/ 5, /*Left/Prev=*/ 9, /*Up=*/ 8, /*Down=*/ 10, /*Home/Cancel=*/ A1); // Arduboy DevKit
-  u8g2.begin(/*Select=*/ 7, /*Right/Next=*/ A1, /*Left/Prev=*/ A2, /*Up=*/ A0, /*Down=*/ A3, /*Home/Cancel=*/ 8); // Arduboy 10 (Production)
+  //u8g2.begin(/*Select=*/ 7, /*Right/Next=*/ A1, /*Left/Prev=*/ A2, /*Up=*/ A0, /*Down=*/ A3, /*Home/Cancel=*/ 8); // Arduboy 10 (Production)
+  u8g2.begin();
 
   pinMode(brightness, OUTPUT);   // sets the pin as output
-  analogWrite(brightness, 200);  // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
+  analogWrite(brightness, 255);  // analogRead values go from 0 to 1023, analogWrite values from 0 to 255
 
   u8g2.setFont(u8g2_font_6x12_tr);
+   u8g2.setContrast(170);
 }
 
 const char *string_list = 
