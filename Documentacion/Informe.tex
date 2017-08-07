@@ -69,7 +69,7 @@
 \begin{titlepage}
 	\title{\Huge Diseño y construcción de fuente conmutada tipo Buck de 75W}
 	\subtitle{Análisis en detalle del diseño y desarrollo de una fuente conmutada para presentarse como trabajo final en la Universidad Tecnológica Nacional de la ciudad de San Francisco, Córdoba}
-	\date{21 de Diciembre de 2016}
+	\date{04 de Agosto de 2017}
 	\maketitle
 \end{titlepage}
 
@@ -79,7 +79,7 @@
 	
 \chapter{Introducción}
 \section{Objetivos}
-El objetivo de este proyecto fue construir una fuente conmutada de 75W que provea diversidad de tensiones de salida reguladas y controladas por medio de un sistema PID. Se hará uso de dos convertidores tipo Buck para las salidas principales y regulables de potencia, así como otros reguladores existentes en el mercado para proveer tensiones fijas y auxiliares. Todo el sistema será controlado por medio de un DSP que implementará el sistema de control PID. El proyecto tiene un fin meramente de investigación y representa un reto ya que el tema fuentes conmutadas no se desarrolla durante la carrera.
+El objetivo de este proyecto fue construir una fuente conmutada de 75W que provea diversidad de tensiones de salida reguladas y controladas por medio de un sistema PID. Se hará uso de un convertidor tipo Buck para la salida principal y regulable de potencia, así como otros reguladores existentes en el mercado para proveer tensiones fijas y auxiliares. Todo el sistema será controlado por medio de un DSP que implementará el sistema de control PID. El proyecto tiene un fin meramente de investigación y representa un reto ya que el tema fuentes conmutadas no se desarrolla durante la carrera.
 
 Se plantearon las siguientes especificaciones para la fuente:
 
@@ -89,18 +89,14 @@ Se plantearon las siguientes especificaciones para la fuente:
 		Parámetro & Descripción & Min & Tip & Max & Unidad
 		\\ \midrule
 		$V_{in}$ & Tensión de entrada & 200 & 220 & 240 & VAC \\
-		$V_{buck(1)}$ & Tensión de Buck 1 & 1 & - & 20 & V \\
-		$I_{buck(1)}$ & Corriente de salida Buck 1 & 0 & - & 3 & A \\
-		$V_{ripple(1)}$ & Tensión de ripple de Buck 1 & - & - & 10 & mV \\
+		$V_{buck(1)}$ & Tensión Buck & 0 & - & 25 & V \\
+		$I_{buck(1)}$ & Corriente salida Buck & 0 & - & 3 & A \\
+		$V_{ripple(1)}$ & Tensión ripple Buck & - & - & 10 & mV \\
 		\multicolumn{6}{c}{ } \\
-		$V_{buck(2)}$ & Tensión de Buck 2 & 1 & - & 20 & V \\
-		$I_{buck(2)}$ & Corriente de salida Buck 2 & 0 & - & 3 & A \\
-		$V_{ripple(2)}$ & Tensión de ripple de Buck 2 & - & - & 10 & mV \\
-		\multicolumn{6}{c}{ } \\
-		$V_{out(3)}$ & Tensión de salida 3 & 3.2 & 3.3 & 3.4 & V \\
-		$I_{out(3)}$ & Corriente de salida 3 & 0 & - & 300 & mA \\
-		$V_{out(4)}$ & Tensión de salida 4 & 4.9 & 5 & 5.1 & V \\
-		$I_{out(4)}$ & Corriente de salida 4 & 0 & - & 1 & A \\
+		$V_{out(3)}$ & Tensión salida auxiliar 1 & 3.2 & 3.3 & 3.4 & V \\
+		$I_{out(3)}$ & Corriente salida auxiliar 1 & 0 & - & 300 & mA \\
+		$V_{out(4)}$ & Tensión salida auxiliar 2 & 4.9 & 5 & 5.1 & V \\
+		$I_{out(4)}$ & Corriente salida auxiliar 2 & 0 & - & 1 & A \\
 		\multicolumn{6}{c}{ } \\
 		$\eta$ & Eficiencia estimada & \multicolumn{3}{c}{80} & \% \\
 		\\ \bottomrule
@@ -108,7 +104,7 @@ Se plantearon las siguientes especificaciones para la fuente:
 	\caption{Parámetros de la fuente}
 \end{table}
 
-\textbf{Es importante aclarar que los 75W de salida son compartidos entre todas las salidas, es decir, no podríamos sacar 20V a 3A en ambos Buck al mismo tiempo ya que estaríamos excediendo los 75W máximos. Lo mismo sucede con las salidas de +3.3V y +5V, los 75W son distribuidos entre las cuatro salidas.}
+\textbf{Es importante aclarar que los 75W de salida son compartidos entre todas las salidas, tanto la variable como las auxiliares}
 
 El siguiente diagrama en bloques representa la estructura general de la fuente, cada bloque será analizado en detalle en los capítulos posteriores:
 
@@ -134,7 +130,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 
 \section{Principio de funcionamiento}
 
-	La fuente posee dos salidas regulables e independientes de potencia que fueron implementadas con dos convertidores Buck idénticos. Cada \textit{Convertidor Buck} o \textit{Buck Converter} en Inglés tiene su entrada conectada a los +30V DC que provienen de la salida rectificada y filtrada del transformador y es el encargado de reducir la tensión que se le suministra para proveer un rango que varia entre 1V y 30V aproximadamente. 
+	La fuente posee una salida regulable e independiente de potencia implementada con un convertidor Buck. El mismo tiene su entrada conectada a los +30V DC que provienen de la salida rectificada y filtrada del transformador y es el encargado de reducir la tensión que se le suministra para proveer un rango que varia entre 0V y 30V aproximadamente. 
 	
 	A continuación se presenta un diagrama simplificado de la topología Buck:
 	
@@ -155,7 +151,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	En el segundo estado cuando abrimos el interruptor durante el tiempo $T_{off}$, la energía almacenada en el inductor es la que produce la circulación de corriente que alimenta al circuito a través del diodo en paralelo.
 	
-	En la práctica, el interruptor es reemplazado en general por un MOSFET de baja $R_{ds(on)}$ y el tipo de diodo es en general de tipo Schottky debido a su alta velocidad de conmutación, baja caída de tensión y baja capacidad parásita. En nuestro caso se optó por un circuito ligeramente distinto en donde el diodo es reemplazado por otro transistor MOSFET en donde el principio de funcionamiento es idéntico pero se reducen las pérdidas producidas por el diodo. A este tipo de Buck se lo conoce como \textit{Convertidor Buck Sincrónico} o \textit{Synchronous Buck Converter}. El esquema del convertidor Buck final se muestra a continuación:
+	En la práctica, el interruptor es reemplazado en general por un MOSFET de baja $R_{ds(on)}$ y el tipo de diodo es en general de tipo Schottky debido a su alta velocidad de conmutación, baja caída de tensión y baja capacidad parásita. En nuestro caso se optó por un circuito ligeramente distinto en donde el diodo es reemplazado por otro transistor MOSFET. El principio de funcionamiento es muy similar pero se reducen las pérdidas producidas por el diodo. A este tipo de Buck se lo conoce como \textit{Convertidor Buck Sincrónico} o \textit{Synchronous Buck Converter}. El esquema del convertidor Buck final se muestra a continuación:
 
 	\newpage
 	\begin{landscape}
@@ -176,11 +172,11 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		\begin{tabular}{M{2cm}M{5cm}M{1cm}M{1cm}M{1cm}M{1cm}} \toprule
 			Parámetro & Descripción & Min & Tip & Max & Unidad
 			\\ \midrule
-			$V_{out}$ & Tensión de salida & 1 & - & 30 & V \\
+			$V_{out}$ & Tensión de salida & 0 & - & 30 & V \\
 			$I_{out}$ & Corriente de salida & 0 & - & 3 & A \\
 			$V_{ripple}$ & Tensión de ripple pico a pico & - & - & 10 & mV \\
-			$I_{ripple}$ & Corriente de ripple del inductor & \multicolumn{3}{c}{100} & mA \\
-			$F_{sw}$ & Frecuencia de conmutación & \multicolumn{3}{c}{150} & KHz \\
+			$I_{ripple}$ & Corriente de ripple del inductor & \multicolumn{3}{c}{300} & mA \\
+			$F_{sw}$ & Frecuencia de conmutación & \multicolumn{3}{c}{300} & KHz \\
 			\bottomrule
 		\end{tabular}
 		\caption{Parámetros de la fuente}
@@ -193,40 +189,40 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	\begin{equation}
 		\begin{aligned}
 		\qquad \qquad L_{min} [\mu H] &= \dfrac{V_{out} \cdot (V_{in} - V{out})}{\Delta I \cdot f_{sw} \cdot V_{in}} \cdot \num{10e6} \\
-		& = \dfrac{15 \cdot (30 - 15)}{\num{100e-3} \cdot \num{150e3} \cdot 30} \cdot \num{10e6}\\
-		& = 500 \mu H
+		& = \dfrac{15 \cdot (30 - 15)}{\num{300e-3} \cdot \num{300e3} \cdot 30} \cdot \num{10e6}\\
+		& = 83 \mu H
 		\end{aligned}
 	\end{equation}
 	
-	Significa que necesitaremos un inductor de al menos $500\mu H$. Podemos ver que se eligió una tensión de salida de 15V para el cálculo cuando las especificaciones dicen que la misma varía entre 0 y 20V; esto es debido a que cuando la tensión de salida es variable se debe considerar el peor caso que es cuando $V_{out} = V_{in}/2$, en ese punto es donde se requiere el mayor valor de inductancia para mantener la corriente de ripple dentro de los límites establecidos.
+	Significa que necesitaremos un inductor de al menos $83\mu H$, se utilizará uno de $100\mu H$. Se puede ver que se eligió una tensión de salida de 15V para el cálculo cuando las especificaciones dicen que la misma varía entre 0 y 30V; esto es debido a que cuando la tensión de salida es variable se debe considerar el peor caso que es cuando $V_{out} = V_{in}/2$, en ese punto es donde se requiere el mayor valor de inductancia para mantener la corriente de ripple dentro de los límites establecidos.
 	
-	La elección de la corriente de ripple es una solución de compromiso, aumentar la misma nos permite utilizar valores de inductancia más pequeños pero degradando la regulación y produciendo un mayor estrés sobre el capacitor de salida que debe ser seleccionado para soporta la misma, así como un mayor ripple provocado por el ESR del capacitor, además, la corriente de salida mínima para no entrar en operación de modo discontinuo está directamente relacionada con la corriente de ripple siendo la relación $I_{out(min)} = I_{ripple}/2$ aunque cabe destacar que dicho efecto no se produce en los convertidor Buck Sincrónicos como en nuestro caso ya que al reemplazar el diodo por un MOSFET la corriente puede circular en ambos sentidos. Este tema no se explicará en detalle aquí ya que no es el foco del análisis, para más información puede consultarse la siguiente nota de aplicación: "\href{http://www.ti.com/lit/an/slyt358/slyt358.pdf}{Efficiency of synchronous versus
+	La elección de la corriente de ripple es una solución de compromiso, aumentar la misma nos permite utilizar valores de inductancia más pequeños pero degradando la regulación y produciendo un mayor estrés sobre el capacitor de salida que debe ser seleccionado para soporta la misma, así como un mayor ripple provocado por el ESR del capacitor, además, la corriente de salida mínima para no entrar en operación de modo discontinuo está directamente relacionada con la corriente de ripple siendo la relación $I_{out(min)} = I_{ripple}/2$ aunque cabe destacar que dicho efecto no se produce en los convertidor Buck Sincrónicos como en nuestro caso ya que al reemplazar el diodo por un MOSFET la corriente puede circular en ambos sentidos evitando que el convertidor entre en modo discontinuo. Este tema no se explicará en detalle aquí ya que no es el foco del análisis, para más información puede consultarse la siguiente nota de aplicación: "\href{http://www.ti.com/lit/an/slyt358/slyt358.pdf}{Efficiency of synchronous versus
 		nonsynchronous buck converters}"
 	
 \section{Selección de los MOSFET de conmutación}
 	
-	Los transistores MOSFET son de gran importancia para lograr un buen rendimiento del convertidor. El MOSFET elegido fue el \href{http://www.irf.com/product-info/datasheets/data/irf540ns.pdf}{IRF540N} en su variante SMD que ocuparán el lugar de Q1 y Q2 y serán manejados por dos drivers de MOSFET MCP1407 de Microchip\textregistered. El transistor Q1 al ser del tipo N requiere una tensión de por lo menos 12V superior a la de entrada, es por ello que su control se realiza a través de un GDT (Gate Driver Transformer) con un circuito de recuperación de continua para permitir ciclos de trabajo de la onda cuadrada mayores al 50\% sin saturar al transformador (para más información sobre el tema puede visitar "\href{http://ridleyengineering.com/design-center-ridley-engineering/49-circuit-designs/45-3-gate-drive-design-tips.html}{Ridley Engineering - Gate Drive Design Tips}").
+	Los transistores MOSFET son de gran importancia para lograr un buen rendimiento del convertidor. El MOSFET elegido fue un \href{https://assets.nexperia.com/documents/data-sheet/PSMN015-60BS.pdf}{PSMN015-60BS} que ocupará el lugar de Q1 y Q2 siendo manejados por el driver IRS21867S de Infineon. El transistor Q1 al ser del tipo N requiere una tensión de por lo menos 12V superior a la de entrada, es por ello que el driver elegido implementa una etapa de boostrap para elevar la tensión y poder saturar al MOSFET Q1.
 	
-	Vamos a calcular la disipación de potencia sobre estos MOSFET ya que su montaje es SMD y no es posible montarlos en disipadores, las pérdidas por conducción vienen dadas por:
+	Se calcula a continuación la disipación de potencia sobre estos MOSFET ya que su encapsulado es SMD y no es posible montarlos en disipadores, las pérdidas por conducción vienen dadas por:
 	
 	\begin{equation}
-	P_{CON} = I_D^2 \cdot R_{ds(typ)} \cdot Duty_{max} =  3.05A^2 \cdot \num{44e-3}\Omega \cdot 0.99 = 0.40W
+	P_{CON} = I_D^2 \cdot R_{ds(typ)} \cdot Duty_{max} =  3.15A^2 \cdot \num{12.6e-3}\Omega \cdot 0.95 = 0.12W
 	\end{equation}
 	
-	Siendo la corriente máxima que circula por el MOSFET $I_{out} + I_{ripple}/2 = 3A + 0.05A$ y asumiendo un Duty Cycle máximo del 99\%.
+	Siendo la corriente máxima que circula por el MOSFET $I_{out} + I_{ripple}/2 = 3A + 0.15A$ y asumiendo un Duty Cycle máximo del 95\%.
 	
 	Las pérdidas por conmutación son un factor importante en las fuentes conmutadas y pueden ser iguales o superiores a las pérdidas por conducción, entonces:
 	
 	\begin{equation}
 		\begin{aligned}
 		\qquad \qquad P_{SW} &= V_{max} \cdot \dfrac{I_D}{2} \cdot (t_r + t_f) \cdot f_{sw} + (0.5 \cdot C_{oss} \cdot V_{max}^2 \cdot f_{sw})\\
-		& = 30V \cdot \dfrac{3.05A}{2} \cdot (\num{35e-9}s + \num{35e-9}s) \cdot \num{150e3}Hz \\
-		& \qquad + (0.5 \cdot \num{250e-12}F \cdot 30V^2 \cdot \num{150e3}Hz)\\
-		& = 0.48W + 0.017W = 0.5W
+		& = 30V \cdot \dfrac{3.15A}{2} \cdot (\num{13e-9}s + \num{7e-9}s) \cdot \num{300e3}Hz \\
+		& \qquad + (0.5 \cdot \num{169e-12}F \cdot 30V^2 \cdot \num{300e3}Hz)\\
+		& = 0.28W + 0.023W = 0.30W
 		\end{aligned}
 	\end{equation}
 	
-	Las pérdidas totales son entonces de $P_{total} = P_{CON} + P_{SW} = 0.9W$. Siendo la resistencia juntura-ambiente de 40\textdegree C/W con una disipación de 0.9W la temperatura de juntura se elevaría a $0.9W \cdot 40\degree C/W = 36\degree C$ por encima de la temperatura ambiente y siendo $T_{J(max)} = 175\degree C$ estamos dentro de los parámetros admisibles.
+	Las pérdidas totales son entonces de $P_{total} = P_{CON} + P_{SW} = 0.42W$. Siendo la resistencia juntura-ambiente de 60\textdegree C/W con una disipación de 0.42W la temperatura de juntura se elevaría a $0.42W \cdot 60\degree C/W = 25.2\degree C$ por encima de la temperatura ambiente y siendo $T_{J(max)} = 175\degree C$ estamos dentro de los parámetros admisibles.
 
 \section{Capacitor de salida}
 
@@ -235,28 +231,28 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	\begin{equation}
 		\begin{aligned}
 		\qquad \qquad C_{out(min)} &= \dfrac{\Delta I_L}{8 \cdot f_{sw} \cdot \Delta V_{out}} \\
-		& = \dfrac{0.1A}{8 \cdot \num{150e3}Hz \cdot \num{10e-3}V} \\
-		& = 8.33 \mu F
+		& = \dfrac{0.15A}{8 \cdot \num{300e3}Hz \cdot \num{10e-3}V} \\
+		& = 60.25 \mu F
 		\end{aligned}
 	\end{equation}
 
-	Sin embargo, a estas frecuencia el valor del ESR del capacitor entra en juego por lo que existe una fuente de ripple más que debemos considerar, es por ello que es recomendado el uso de capacitores para alta frecuencia con un bajo ESR, sin embargo, por cuestiones de disponibilidad se utilizaron capacitores convencionales cuyo ESR se encuentra alrededor de los $400 m\Omega$, entonces:
+	Sin embargo, a estas frecuencia el valor del ESR del capacitor entra en juego por lo que existe una fuente de ripple más que debemos considerar, es por ello que es recomendado el uso de capacitores para alta frecuencia con un bajo ESR. Se utilizó un capacitor de $470 \mu F$ con un ESR de ($350 m \Omega$):
 	
 	\begin{equation}
-		ESR_{ripple} = ESR \cdot \Delta I_L = \num{400e-3}\Omega \cdot 0.1A = 40mV
+		ESR_{ripple} = ESR \cdot \Delta I_L = \num{350e-3}\Omega \cdot 0.15A = 52mV
 	\end{equation}
 	
-	Vemos como solo el ESR del capacitor produce un ripple varias superior, la única forma de reducir esto es utilizar capacitores con un bajo ESR y ESL por lo que a menos que los utilicemos nuestro ripple se encontrará por encima de los 10mV puestos como objetivo. Para minimizar este efecto se colocan 3 capacitores de $470\mu F$ en paralelo lo que reduce el ESR a la tercera parte produciendo entonces un ripple de $\approx 13mV$
+	Vemos como solo el ESR del capacitor produce un ripple varias veces superior al ripple causado por la rectificación. La única forma de reducir el mismo es utilizando inductores más grandes para atenuar la corriente de ripple o el uso de capacitor de bajo ESR.
 	
 \section{Medición de corriente de salida}
 
-	Para la medición de la corriente de salida se utiliza una resistencia de sensado en serie con la salida, idealmente una resistencia con una precisión de al menos 1\% y una buena estabilidad térmica debería ser utilizar, en nuestro caso, por cuestiones de disponibilidad, se utilizaron 9 resistencias de $0.47\Omega$ en paralelo que producen una tensión de 157mV a 3A. Esta señal diferencial es luego llevada al circuito de control donde se encuentra el acondicionamiento necesario para ser luego procesado por el DSP.
+	Para la medición de la corriente de salida se utiliza una resistencia de sensado en serie. Se utilizó una resistencia de $0.05 \Omega$ al 1\% con una estabilidad térmica de $\pm 50ppm/ \degree C$. Esta señal diferencial es luego llevada al circuito de control donde se encuentra el acondicionamiento necesario para ser luego procesado por el DSP.
 
 \chapter{Controlador PID}\label{chapter:pid}
 
 \section{Introducción}
 
-	Cada uno de los 2 convertidores Buck presentes en la fuente tienen aplicado un lazo de control PID. Para poder simular y obtener los parámetros del controlador PID debemos desarrollar en primer lugar la función de transferencia de nuestro sistema, para ello vamos a suponer que:
+	El convertidor Buck tiene aplicado un lazo de control PID para el control de la tensión y corriente de salida. Para poder simular y obtener los parámetros del controlador PID debemos desarrollar en primer lugar la función de transferencia de nuestro sistema, para ello vamos a suponer que:
 	
 	\begin{itemize}
 		\item Consideraremos el análisis de un Buck convencional y no uno sincrónico, la única diferencia radica en la caída de tensión producida por el semiconductor que se coloque en la posición del diodo
@@ -494,7 +490,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		%emph=[2]{word1,word2}, emphstyle=[2]{style},    
 	}
 
-	Insertamos ahora nuestra función de transferencia $H(s)$ en MATLAB\textregistered utilizando el siguiente programa: 
+	Insertamos ahora nuestra función de transferencia $H(s)$ en MATLAB\textregistered \ utilizando el siguiente programa: 
 
 	\begin{minipage}{\textwidth}
 		\lstinputlisting{../Matlab/PID.m}
@@ -520,9 +516,9 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\subsubsection{Respuesta transitoria}
 	
-	En la figura \ref{buck:settling_time} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que el tiempo de crecimiento es de $192 \mu s$ y el tiempo de establecimiento de $330 \mu s$ sin sobre-elongación de ningún tipo. 
+	En la figura \ref{buck:settling_time} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que el tiempo de crecimiento es de $22 \mu s$ y el tiempo de establecimiento de $65 \mu s$ con una sobre-elongación del 1.57\%. 
 	
-	El margen de fase es de 90 grados lo que significa que podemos introducir un defasaje de hasta dicho ángulo en el lazo de control sin perder la estabilidad del sistema.
+	El margen de fase es de 88 grados lo que significa que podemos introducir un defasaje de hasta dicho ángulo en el lazo de control sin perder la estabilidad del sistema.
 	
 	\subsubsection{Estado Estacionario}
 	
@@ -530,9 +526,9 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\subsubsection{Respuesta en frecuencia}
 
-	En la figura \ref{buck:bode} se puede apreciar como el ancho de banda de nuestro sistema se encuentra alrededor de los 194 KHz donde tenemos una caída de -3dB, esta frecuencia se encuentra dentro del rango de nuestra frecuencia de conmutación por lo que es importante considerar un buen filtrado de cualquier ruido de conmutación que pueda perturbar al lazo de realimentación ya que el sistema sería capaz de responder a los mismos.
+	En la figura \ref{buck:bode} se puede apreciar como el ancho de banda de nuestro sistema se encuentra alrededor de los 15 kHz donde tenemos una caída de -3dB.
 	
-	El margen de fase es de -180 grados lo que indica que podemos agregar hasta 180 de fase a nuestro sistema sin volverlo inestable. Respecto al margen de ganancia, el mismo es infinito lo que significa que en teoría podríamos agregar tanta ganancia como quisiéramos sin volver inestable al sistema.
+	El margen de fase es de -180 grados lo que indica que podemos agregar hasta 180 grados de fase a nuestro sistema sin volverlo inestable.
 	
 	\subsubsection{Diagrama de polos y ceros}
 
@@ -540,15 +536,15 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\begin{itemize}
 		\item Polos:
-			\subitem \num{-1.2079e6}
-			\subitem \num{-2120}
-			\subitem \num{-546}
+			\subitem \num{-89368}
+			\subitem \num{-6545}
+			\subitem \num{-1569}
 		\item Ceros:
-			\subitem \num{-2120}
-			\subitem \num{-546}
+			\subitem \num{-6079}
+			\subitem \num{-1628}
 	\end{itemize}
 	
-	Podemos ver que tanto los polos como ceros se encuentran en el eje real y del lado negativo por lo que el sistema es estable y dado a que se encuentran distribuidos a lo largo del eje el sistema es sobre-amortiguado.
+	Podemos ver que tanto los polos como ceros se encuentran en el eje real y del lado negativo por lo que el sistema es estable y dado a que los polos se encuentran todos distribuidos a lo largo del eje horizontal el sistema es sobre-amortiguado.
 	
 	%\subsubsection{Diagrama de Nyquist}
 	%Figura \ref{buck:nyquist} % TODO: Hacer analisis de Nyquist
@@ -584,7 +580,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	\newpage
 	\subsection{Análisis en el plano discreto z}
 
-	Para el análisis en el plano discreto se discretizó el sistema con la frecuencia de muestreo del ADC del DSP que es de 2 MSPS. El siguiente programa de MATLAB\textregistered \ fue el utilizado para el análisis:
+	Para el análisis en el plano discreto, se discretizó el sistema con la frecuencia de muestreo de 178kHz. El siguiente programa de MATLAB\textregistered \ fue el utilizado para el análisis:
 	
 	\lstinputlisting{../Matlab/Plots_discreto.m}
 	
@@ -592,38 +588,33 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\subsubsection{Respuesta transitoria}
 	
-	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que la respuesta es muy similar o idéntica a la obtenida en el plano continuo. Esto es un buen indicador ya que significa que la frecuencia de muestreo es lo suficientemente alta como para controlar el sistema de manera adecuada. Por ejemplo, si utilizamos una frecuencia baja como 2 kHz la respuesta que tenemos es la siguiente:
+	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que la respuesta es muy similar o idéntica a la obtenida en el plano continuo. Esto es un buen indicador ya que significa que la frecuencia de muestreo es lo suficientemente alta como para controlar el sistema de manera adecuada. Por ejemplo, si utilizamos una frecuencia baja como 50 kHz la respuesta que tenemos es la siguiente:
 	
 	\begin{figure}[H]
 		\centering
 		\includegraphics[width=0.9\textwidth,height=\textheight,keepaspectratio]{buck_step_low_freq}
 		\caption{Respuesta transitoria con baja frecuencia de muestreo}
 	\end{figure}
+
+	En donde a pesar que el sistema llega a su estado final existe una sobre-elongación sumamente elevada.
 	
 	\subsubsection{Estado Estacionario}
 	
-	En las figura \ref{buck:steady_state_discrete} vemos que el sistema se comporta de la misma manera que lo hacía en el plano continuo s.
+	En la figura \ref{buck:step_discrete} vemos que el sistema se comporta de la misma manera que lo hacía en el plano continuo s.
 	
 	\subsubsection{Respuesta en frecuencia}
 	
-	Observando la figura \ref{buck:bode_discrete} vemos como el ancho de banda del sistema se redujo drásticamente a 2 kHz con respecto a los casi 200 kHz obtenidos en el plano continuo. El margen de fase se mantuvo en -180 grados y el de ganancia ya no es infinito sino que pasa a ser de 27.6dB lo que nos indica que ésta es la ganancia máxima que podemos agregar al sistema sin volverlo inestable.
+	Observando la figura \ref{buck:bode_discrete} vemos como el ancho de banda del sistema subió a 25kHz. El margen de fase se mantuvo en -180 grados y el de ganancia es de 7.06 dB que es la ganancia máxima que podemos agregar al lazo sin volverlo inestable.
 	
 	\subsubsection{Diagrama de polos y ceros}
 	
-	En la figura \ref{buck:polos_ceros_discrete} vemos los polos y ceros no se encuentran en los mismos lugares pero todos son reales y negativos por lo que el sistema sigue siendo estable y sobre-amortiguado.
+	En la figura \ref{buck:polos_ceros_discrete} vemos los polos y ceros ubicado del lado izquierdo del eje vertical por lo que el sistema es estable .
 	
 	\begin{sidewaysfigure}
 		\centering
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_step_response_discrete} 
 		\caption{Respuesta transitoria - Sistema Discreto}
 		\label{buck:step_discrete}
-	\end{sidewaysfigure}
-	
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_steady_state_discrete} 
-		\caption{Estado estacionario - Sistema Discreto}
-		\label{buck:steady_state_discrete}
 	\end{sidewaysfigure}
 	
 	\begin{sidewaysfigure}
@@ -651,7 +642,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 
 \section{Introducción}
 
-El circuito de control es el encargado de controlar cada uno de los Convertidores Buck y aplicar el controlador PID además de monitorear las tensiones y corrientes de salida de los dos Buck y las salidas de tensión auxiliares de +5V y +3.3V. Las figuras \ref{control:main} y \ref{control:feedback} muestran los esquemáticos correspondientes. A continuación, vamos a analizar en detalle cada una de las partes que integran al circuito.
+El circuito de control es el encargado de controlar el convertidor Buck y aplicar el controlador PID, además de monitorear las tensiones y corrientes de cada una de las salidas. Las figuras \ref{control:main} y \ref{control:feedback} muestran los esquemáticos correspondientes al circuito de control y el de adaptación de señal. A continuación, vamos a analizar en detalle cada una de las partes que integran al circuito.
 
 \begin{sidewaysfigure}
 	\centering
@@ -669,17 +660,17 @@ El circuito de control es el encargado de controlar cada uno de los Convertidore
 
 \section{Microcontrolador DSP}
 
-El microcontrolador elegido es un dsPIC33FJ16GS402 de la empresa Microchip\textregistered capaz de trabajar a una velocidad de hasta 50 MIPS con 16KB de memoria FLASH y 2KB de memoria RAM. Las principales características por las que fue elegido son:
+El microcontrolador elegido es un dsPIC33EP64GS502 de la empresa Microchip\textregistered \ capaz de trabajar a una velocidad de hasta 70 MIPS con 64KB de memoria FLASH y 8KB de RAM. Las principales características por las que fue elegido son:
 
 \begin{itemize}
-	\item 50 MIPS de velocidad
+	\item 70 MIPS
 	\item Módulo PWM de alta velocidad que permite un control preciso del Duty Cycle respecto a los convencionales
 	\item Control de dead-time o tiempo muerto
-	\item ADC de alta velocidad de 10 bits con circuitos Sample\&Hold dedicados lo que permite como tomar muestras de tensión y corriente de las salidas en forma simultánea sin ningún tipo de atraso entre una y otra
+	\item ADC de alta velocidad de 12 bits capaz de capturar y convertir hasta 4 entradas analógicas de forma simultánea lo que permite muestrear los niveles de tensión y corriente en el mismo instante para tener un cálculo certero de la potencia
 	\item Núcleo DSP con instrucciones MAC (multiply-accumulate) de ciclo único lo que permite la ejecución de algoritmos PID de forma rápida
 \end{itemize} 
 
-Como se explica arriba, este microcontrolador tiene la posibilidad de generar tiempos muertos o Dead-Time en las señales PWM para los Convertidores Buck. Como recordamos, los Buck implementados son del tipo sincrónico por lo que mientras un MOSFET se enciende el otro permanece apagado. Debido a que el tiempo de transición entre encendido y apagado no es instantáneo es necesario introducir un tiempo muerto entre ambos estados en donde ambos MOSFET se encuentran apagados. En la imagen \ref{deadtime} se ilustra el comportamiento descrito.
+Como se explica arriba, este microcontrolador tiene la posibilidad de generar tiempos muertos o Dead-Time en las señales PWM. Como recordamos, el Buck implementado es del tipo sincrónico por lo que mientras un MOSFET se enciende el otro permanece apagado. Debido a que el tiempo de transición entre encendido y apagado no es instantáneo se introduce un tiempo muerto entre las conmutaciones en donde ambos MOSFET se encuentran apagados. En la imagen \ref{deadtime} se ilustra el comportamiento descrito.
 
 \begin{figure}[H]
 	\centering
@@ -690,41 +681,17 @@ Como se explica arriba, este microcontrolador tiene la posibilidad de generar ti
 
 \section{Metodología de muestreo}
 
-El módulo ADC que tenemos disponible contiene más de un circuito Sample\&Hold, disponemos de 3 Sample\&Hold dedicados y uno compartido:
+El DSP cuenta con 4 cores ADC que permiten convertir de forma simultánea hasta 4 entradas analógicas. Además, incorpora un filtro digital el cual es capaz de realizar oversampling de forma automática. 
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.7\textwidth,height=\textheight,keepaspectratio]{sh_diagram}
-	\caption{Estructura del módulo ADC}
-\end{figure}
-	
-El sistema funciona de a pares, es decir, cada vez que se inicia una conversión un par de entrada analógicas son capturadas. Esto nos permite medir en un mismo instante de tiempo la tensión y la corriente de salida, sin embargo, solo disponemos de un SAR por lo que solo se convierte un canal a la vez. Existen varias configuraciones sobre el orden de muestreo y conversión del módulo, el siguiente fue el elegido:
+Se aprovechan estas funciones para muestrear de forma simultánea la tensión y corriente del buck con un oversampling de 16x lo que añade 2 bits de resolución a los 12 bits del ADC. Al mismo tiempo se muestrea la corriente y tensión de la línea de 5V. Una vez terminadas todas estas conversiones se pasa a la línea de 3.3V donde se mide también de manera simultánea la tensión y la corriente.
 
-\begin{enumerate}
-	\item Se inicia el pedido de inicio de muestreo del par. Esto iniciará el muestreo de una entrada par y su impar asociada, por ejemplo, AN0 y AN1, AN2 y AN3, etcétera.
-	\item Luego de pasado el tiempo de sincronismo ambos canales (par e impar) muestrean de forma simultánea.
-	\item Una vez terminado el muestreo se inicia la conversión del canal par.
-	\item Finalmente, terminada la conversión del canal par, se inicia la conversión del canal impar de forma automática, que luego de haberse finalizado su conversión se genera una interrupción y termina así el proceso.
-\end{enumerate}
+Todo este ciclo se repite cada $6.67 \mu s$ que equivalen a 3 períodos del PWM.
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{adc_conversion}
-	\caption{Proceso de muestreo y conversión}
-\end{figure}
-
-Este proceso se raliza para ambos buck de forma intercalada aprovechando así al máximo el uso del procesador:
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{cpu-load}
-	\caption{Intercalado del muestreo para los Convertidores Buck}
-\end{figure}
-
+La corriente no solo se mide a través de la lectura de los ADC sino que también es continuamente comparada con una tensión de referencia en los comparadores internos del DSP lo que permite reaccionar de manera instantánea a cualquier sobre-corriente sin necesidad de esperar al muestreo y conversión de las entradas analógicas.
 
 \section{Leading-Edge Blanking}
 
-Para la correcta lectura de la tensión de salida se utiliza una funcionalidad llamada Leading-Edge Blanking que provee el módulo PWM del DSP. Básicamente permite que la captura del ADC se realize un determinado tiempo después de los flancos de PWM para de este modo no capturar el ruido de conmutación y obtener una lectura erronea:
+Para la correcta lectura de la tensión de salida se utiliza una funcionalidad llamada Leading-Edge Blanking que provee el módulo PWM del DSP. Básicamente permite que la captura del ADC se realize un determinado tiempo después de los flancos de PWM para de este modo no capturar el ruido de conmutación y obtener una lectura correcta de la señal:
 
 \begin{figure}[H]
 	\centering
@@ -735,7 +702,7 @@ Para la correcta lectura de la tensión de salida se utiliza una funcionalidad l
 
 \section{Acondicionamiento de las tensiones de salida} \label{acondicionamiento-tensiones}
 
-El siguiente es el circuito de realimentación de tensión usado para poder tomar las tensiones de los dos convertidores Buck y las salidas auxiliares de +5V y +3.3V.
+El siguiente es el circuito de realimentación de tensión usado para poder tomar las tensiones del convertidor Buck y las salidas auxiliares de +5V y +3.3V.
 
 \begin{figure}[H]
 	\centering
@@ -744,42 +711,44 @@ El siguiente es el circuito de realimentación de tensión usado para poder toma
 	\label{voltage_feedback_circuit}
 \end{figure}
 
-El circuito es el mismo para todas las salidas variando únicamente el divisor resistivo de entrada al seguidor de tensión. A la salida del operacional se implementó un simple filtro pasa-bajos con una frecuencia de corte de 160kHz para eliminar los ruidos de alta frecuencia que puedan generarse como consecuencia de la conmutación. 
+El circuito es el mismo para todas las salidas variando únicamente el divisor resistivo de entrada al seguidor de tensión. Se debe tener en cuenta el offset introducido por el seguidor de tensión que se encuentra en el rango de $\pm 4.5mV$ lo que por ejemplo, en la tensión de salida del Buck representaría un error de $\pm 41mV$ de no ser compensado.
 
-Según el datasheet de nuestro microcontrolador, la resolución efectiva del ADC es de 9.4 bits y teniendo una tensión de referencia para el mismo de 3.3V con una variación máxima de $\pm2.5\%$, podemos calcular la resolución de tensión que tenemos al medir cada una de las salidas de la fuente y el error asociado.
+La resolución del ADC del DSP es de 12 bits e implementamos la técnica de oversampling para la corriente y tensión de salida del buck que nos otorgan 14 bit de resolución. Teniendo una tensión de referencia para el ADC de 3.3V con una variación máxima de $\pm0.08\%$, podemos calcular la resolución de tensión que tenemos al medir cada una de las salidas de la fuente y el error asociado.
 
 La resolución en tensión del ADC puede ser calculada como:
 
 \begin{equation}
-	Res = 3.3V / 2^{9.4} = 4.88 mV
+	Res_{buck} = 3.3V / 2^{14} = 201.42 \mu V
+\end{equation}
+\begin{equation}
+	Res_{aux} = 3.3V / 2^{12} = 805.65 \mu V
 \end{equation}
 
 Vamos a calcular el factor de atenuación de cada salida que viene dado por el valor de las resistencias en el divisor de tensión, tomando como ejemplo el circuito de la figura \ref{voltage_feedback_circuit} el factor de atenuación esta dado como:
 
 \begin{equation}
-	Vo/Vi = \frac{10}{10 + 82} = 0.109
+	Vo/Vi = \frac{220}{220 + 1800} = 0.109
 \end{equation}
 
-Con la resolución del ADC y el factor de atenuación podemos calcular entonces la resolución que tenemos al medir la tensión de salida del Buck 1 en este caso:
+Con la resolución del ADC y el factor de atenuación podemos calcular entonces la resolución que tenemos al medir la tensión de salida del Buck, en este caso:
 
 \begin{equation}
-	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{4.88e-3} mV}{0.109} = 45 mV
+	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{201.42e-6} \mu V}{0.109} = 1.85 mV
 \end{equation}
 
-Como la tensión de referencia tiene una variación de $\pm2.5\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm2.5\%$ que se traduce en una variación de $\pm1.2mV$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
+Como la tensión de referencia tiene una variación de $\pm0.08\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm0.08\%$ que se traduce en una variación de $\pm1.48 \mu V$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
 		Parámetro & Factor de atenuación Vo/Vi & Resolución & Error 
 		\\ \midrule
-		$V_{buck1}$ & 0.109 & 45mV & $\pm1mV$ \\
-		$V_{buck2}$ & 0.109 & 45mV & $\pm1mV$ \\
-		$V_{5V}$ & 0.641 & 7.61mV & $\pm0.2mV$ \\
-		$V_{3.3V}$ & 0.909 & 5.37mV & $\pm0.13mV$ \\
+		$V_{buck}$ & 0.109 & 1.85mV & $\pm1.48 \mu V$ \\
+		$V_{5V}$ & 0.637 & 1.25mV & $\pm1 \mu V$ \\
+		$V_{3.3V}$ & 0.954 & 0.83mV & $\pm0.66 \mu V$ \\
 		\bottomrule
 	\end{tabular}
-	\caption{Resolucíon de las tensiones de salida}
+	\caption{Resolución de las tensiones de salida}
 \end{table}
 
 \section{Acondicionamiento de las corrientes de salida}
@@ -792,16 +761,19 @@ Como la tensión de referencia tiene una variación de $\pm2.5\%$, la lectura de
 
 Para medir la corriente de salida se toma la señal diferencial proveniente de las resistencias ubicadas en cada salida y se conectan a un amplificador para sensado de corriente INA196 pasando primero por un filtro pasa-bajos en la entrada. El amplificador tiene una ganancia fija de 20 por lo que las resistencias de sensado se calcularon en base a esta ganancia para obtener una tensión máxima de 3.3V a la salida. El circuito es el mismo para todas las salidas.
 
-Utilizando la resolución del ADC obtenida en la sección anterior podemos calcular la resolución de corriente que tenemos en cada salida. Como tenemos una ganancia de 20 la resolución de tensión del ADC pasa a ser de:
+Utilizando la resolución del ADC obtenida en la sección anterior podemos calcular la resolución de corriente que tenemos en cada salida. Como se tiene una ganancia de 20, la resolución de tensión del ADC pasa a ser de:
 
 \begin{equation}
-	Res = 4.88mV / 20 = 244\mu V
+	Res_{buck} = 201.42 \mu V / 20 = 10\mu V
+\end{equation}
+\begin{equation}
+	Res_{aux} = 805.65 \mu V / 20 = 40.28 \mu V
 \end{equation}
 
-Tomemos como ejemplo la salida del Buck 1 cuya resistencia de sensado es de $52.2m\Omega$:
+Tomemos como ejemplo la salida del buck cuya resistencia de sensado es de $50m\Omega$:
 
 \begin{equation}
-	Resolucion \ Corriente = Res / 52.2m\Omega = 4.67mA
+	Resolucion \ Corriente = Res / 50m\Omega = 200 \mu A
 \end{equation}
 
 Aplicando el mismo proceso a todas las demás salidas:
@@ -811,13 +783,12 @@ Aplicando el mismo proceso a todas las demás salidas:
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
 		Parámetro & Resistencia de sensado & Resolución & Error 
 		\\ \midrule
-		$I_{buck1}$ & $52.2m\Omega$ & 4.67mA & $\pm0.11mA$ \\
-		$I_{buck2}$ & $52.2m\Omega$ & 4.67mA & $\pm0.11mA$ \\
-		$I_{5V}$ & $157m\Omega$ & 1.55mA & $\pm0.04mA$ \\
-		$I_{3.3V}$ & $500m\Omega$ & 0.48mA & $\pm0.01mA$ \\
+		$I_{buck}$ & $50m\Omega$ & $200 \mu A$ & $\pm 160nA$ \\
+		$I_{5V}$ & $100m\Omega$ & $408.2 \mu A$ & $\pm 326nA$ \\
+		$I_{3.3V}$ & $150m\Omega$ & $272.13 \mu A$ & $\pm 218nA$ \\
 		\bottomrule
 	\end{tabular}
-	\caption{Resolucíon de las corrientes de salida}
+	\caption{Resolución de las corrientes de salida}
 \end{table}
 
 Donde el error de la medición como en el caso anterior está dado por la variación máxima de la tensión de referencia del ADC, despreciando los efectos térmicos sobre las resistencias de sensado.
@@ -826,13 +797,29 @@ Donde el error de la medición como en el caso anterior está dado por la variac
 
 \section{PID}
 
-El programa del DSP fue escrito en C utilizando el compilador XC16 v1.26 de Microchip\textregistered \ excepto por el algoritmo del PID que fue implementado en lenguaje ensamblador. 
+El programa del DSP fue escrito en C utilizando el compilador XC16 v1.31 de Microchip\textregistered \ excepto por el algoritmo del PID que fue diseñado e implementado en lenguaje ensamblador. 
 
-Debido a que el término diferencial de nuestro PID es 0 se trata en realidad de un controlador PI el cual se implementó de la siguiente manera, aprovechando los acumuladores con saturación de 40 bits del DSP y las multiplicaciones de un solo ciclo:
+Debido a que el término diferencial de nuestro PID es 0 se trata en realidad de un controlador PI el cual se implementó de la siguiente manera aprovechando los acumuladores con saturación de 40 bits del DSP y las multiplicaciones de un solo ciclo:
 
 \lstinputlisting{../PowerSupplyFirmware.X/myPI.s}
 
-Esta rutina se ejecuta cada $6.66\mu s$ para cada convertidor Buck por lo que es importante que se ejecute rápidamente.
+Esta rutina se ejecuta cada $6.67\mu s$ por lo que es importante que se ejecute rápidamente, para ello el algoritmo solo utiliza números enteros de 16 bit por lo que deben convertirse todos los valores en coma flotante de las constantes del PID a enteros para ser utilizados.
+
+Como se vio durante el desarrollo de la función de transferencia del convertidor Buck la relación es $\dfrac{\hat{v_o}(s)}{\hat{d}(s)}$ siendo $\hat{v_o}(s)$ la tensión de salida del Buck que varía entre 0 y 30V, si convertimos estos valores de tensión a las lecturas correspondientes del ADC tendríamos una variación entre 0 y 16384 ($2^{14}$) por lo que podríamos designar un factor de escala de la siguiente manera:
+
+\begin{equation}
+	y = 16384 / 30V = 546.13
+\end{equation}
+
+Este es el factor por el cual afectaremos a Kp y Ki. Además, Ki lo vamos a multiplicar por el período de muestreo de modo que quede previamente computado y no deba calcularse en cada ciclo que corre el PID reduciendo así el tiempo de cálculo. Entonces los valores de Kp y Ki redondeados a enteros quedan:
+
+\begin{equation}
+	Kp = 0.9139 * 546.13 = 499
+\end{equation}
+
+\begin{equation}
+	Ki = 1488 * 546.13 * (1/178000) = 5
+\end{equation}
 
 \chapter{Mediciones}
 
@@ -918,11 +905,9 @@ Para la medición de los tiempos de respuesta de la fuente se aplicó una carga 
 
 \chapter{Conclusión}
 
-El sistema es estable y funciona perfectamente con los parámetros del PID calculados en MATLAB tal como lo indicaba el modelo en la teoría. El ripple es ligeramente superior al calculado debido probablemente al ESR de los capacitores. La regulación de carga y de línea es excelente manteniendo la tensión prácticamente sin variación.
+El sistema es estable y funciona perfectamente con los parámetros del PID calculados en MATLAB tal como lo indicaba el modelo en la teoría. El ripple es ligeramente superior al calculado debido al ESR de los capacitores. La regulación de carga y de línea es excelente manteniendo la tensión prácticamente sin variación.
 
 Algunas mejores posibles son el reemplazo del transformador de 50Hz por una fuente conmutada para poder sacar más potencia (la cual se encuentra limitada actualmente por el transformador) y reducir el peso. 
-
-La utilización de un ADC de mayor resolución es también otra posible mejora que podría mejorar la regulación de carga ya que la variación actual es tan pequeña que no se encuentra dentro del rango detectable del ADC (que como se vio en la sección \ref{acondicionamiento-tensiones} es de 45mV).
 
 \newpage
 \chapter{Bibliografía y Contacto}
