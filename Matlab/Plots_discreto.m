@@ -1,7 +1,8 @@
 % Parametros calculados del PID
-Kp = 0.175
-Ki = 371.22
+Kp = 0.9139
+Ki = 1488
 Kd = 0
+
 % Frecuencia de muestreo del ADC del PIC
 Fs = 150e3    % 150 KSPS
 
@@ -13,6 +14,7 @@ H_discrete = c2d(H, 1/Fs, 'zoh')
 
 % Creamos el sistema de lazo cerrado siendo G la planta
 T_pid = feedback(G_discrete*H_discrete, 1)
+Fc = bandwidth(T_pid)/(2*pi)
 
 % Graficamos la respuesta del sistema con lazo cerrado
 figure(1);

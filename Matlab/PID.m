@@ -1,10 +1,10 @@
 s = tf('s');
 
-R = 10;         % Resistencia de carga, consideramos una corriente de 1.5A
-Rc = 130*10e-3; % ESR de los 3 capacitores en paralelo a la salida
-C = 1410e-6;    % Capacidad de salida
-Rl = 100e-3;    % Resistencia del inductor
-L = 500e-6;     % Inductancia
+R = 10;         % Resistencia de carga [Ohm]
+Rc = 0.35;      % ESR del capacitor de salida [Ohm]
+C = 470e-6;     % Capacidad de salida
+Rl = 118e-3;    % Resistencia del inductor
+L = 100e-6;     % Inductancia
 Vi = 30;        % Tensión de entrada al buck
 
 % Función de transferencia del Convertidor Buck
