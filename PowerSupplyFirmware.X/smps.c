@@ -5,114 +5,53 @@
 #include <dsp.h>
 #include <pps.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <math.h>
+#include <uart.h>
 #include "pid.h"
-
-// Tablas de corrección del ADC
-#define ADC_VOLTAGE_ERROR_TABLE_SIZE 22
-static const int16_t adcVoltageErrorTable[][2] = { 
-    { 0, 0 },         // { ADC Value, Cuanto sumar al valor del ADC obtenido }
-    { 36/2, 0 },      // 1V
-    { 70/2, 0 },      // 2V
-    { 104/2, 0 },     // 3V
-    { 138/2, 0 },     // 4V
-    { 172/2, 0 },     // 5V
-    { 205/2, 0 },     // Y asi sigue...
-    { 239/2, 0 },
-    { 273/2, 0 },
-    { 306/2, 0 },
-    { 340/2, 0 },
-    { 372/2, 0 },
-    { 406/2, 0 },
-    { 440/2, 0 }, 
-    { 473/2, 0 },
-    { 508/2, 0 },
-    { 539/2, 0 },
-    { 573/2, 0 },
-    { 606/2, 0 },
-    { 641/2, 0 },
-    { 674/2, 0 },
-    { 1023/2, 0 }
-};
-
-#define ADC_CURRENT_ERROR_TABLE_SIZE 22
-static const int16_t adcCurrentErrorTable[][2] = { 
-    { 0, 0 },         // { ADC Value, Cuanto sumar al valor del ADC obtenido }
-    { 43/2, 0 },      
-    { 79/2, 0 },      
-    { 116/2, 0 },     
-    { 155/2, 0 },     
-    { 191/2, 0 },     
-    { 228/2, 0 },     
-    { 264/2, 0 },
-    { 297/2, 0 },
-    { 340/2, 0 },
-    { 376/2, 0 },
-    { 416/2, 0 },
-    { 455/2, 0 },
-    { 493/2, 0 }, 
-    { 527/2, 0 },
-    { 566/2, 0 },
-    { 605/2, 0 },
-    { 543/2, 0 },
-    { 681/2, 0 },
-    { 719/2, 0 },
-    { 757/2, 0 },
-    { 1023/2, 0}
-};
 
 static volatile uint16_t buffer[2048] = {0};
 static volatile uint16_t counter = 0;
 
 // Estados de las salidas
-PowerSupplyStatus buckStatus;
-PowerSupplyStatus aux5VStatus;
-PowerSupplyStatus aux3V3Status;
+volatile PowerSupplyStatus buckStatus;
+volatile PowerSupplyStatus aux5VStatus;
+volatile PowerSupplyStatus aux3V3Status;
 
 void __attribute__((__interrupt__, no_auto_psv)) _AD1Interrupt(void) {
     IFS0bits.ADCIF = 0;
 }
 
 /**
- * Interrupción del filtro digital 0. Corresponde a AN0 -> Buck current.
- * El tiempo total de obtención es el tiempo de muestreo + tiempo de conversión.
- * 
- * Total time = Conversion time + Sampling time = 314ns + 34ns = 350ns
- * 
- * El filtro tiene un oversampling de 16x por lo que deberia ejecutarse cada:
- * 
- *  350ns * 16 = 5.6us
+ * Interrupción del canal AN0 -> Buck current
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
+void __attribute__((__interrupt__, no_auto_psv)) _ADCAN0Interrupt(void) {   
     buckStatus.current = BUCK_CURRENT_ADC_BUFFER;
-    IFS11bits.ADFLTR0IF = 0;
+    IFS6bits.ADCAN0IF = 0;
 }
 
 /**
- * Interrupción del filtro digital 1. Corresponde a AN1 -> Buck voltage.
+ * Interrupción del filtro digital 0. Corresponde a AN1 -> Buck voltage.
  * 
  * Este es un filtro de oversampling, al mismo tiempo los core 2 y 3 convierten
  *  los valores de tensión y corriente de la línea de 5V por lo que para cuando
- *  ambos filtros terminaron, las conversiones de 5V ya están finalizadas ya que
- *  es un solo muestreo.
- * El filtro digital 1 es el de menor prioridad de interrupción y ya que ambos
- *  filtros estan asociados a entradas con un trigger común, si llegamos acá el
- *  filtro digital 0 ya finalizó por lo que podemos pasar al step 2 y liberar los
- *  cores 0 y 1 para leer el canal de 3.3V
+ *  este filtro terminó, las conversiones de 5V ya están finalizadas ya que
+ *  es un solo muestreo, lo mismo con la medición de corriente en AN0.
+ * 
+ * Solo puede utilizarse un filtro digital de forma simultánea, no podemos usar
+ *  ambos filtros digitales a la vez (bug en hardware http://www.microchip.com/forums/m897747.aspx)
+ * Debido a que la resolución en corriente es mucho mayor y suficiente usamos
+ *  el oversampling para el muestreo de tensión únicamente.
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
+void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
     register int16_t output asm("w0");
     
     buckStatus.PID.measuredOutput = BUCK_VOLTAGE_ADC_BUFFER;
-    buckStatus.outputVoltage = BUCK_VOLTAGE_ADC_BUFFER;
+    buckStatus.outputVoltage = buckStatus.PID.measuredOutput;
 
-    /*
-    if(counter < 2048) {
-        buffer[counter++] = BUCK_VOLTAGE_ADC_BUFFER;
-    }
-    else {
-        FAULT_LAT = !FAULT_LAT;
-    }*/
+    //if(counter < 2048) {
+    //    buffer[counter++] = BUCK_VOLTAGE_ADC_BUFFER;
+    //}
     
     if(buckStatus.enablePID) {
         output = myPI(&buckStatus.PID);
@@ -132,11 +71,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR1Interrupt(void) {
     }
     
     setChannelsStep2();
-    IFS11bits.ADFLTR1IF = 0;
+    IFS11bits.ADFLTR0IF = 0;
 }
 
 /**
- * interrupción del canal AN2 -> 5V current
+ * Interrupción del canal AN2 -> 5V current
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {   
     aux5VStatus.current = CURRENT_5V_ADC_BUFFER;
@@ -190,7 +129,8 @@ void __attribute__((__interrupt__, no_auto_psv)) _PWM1Interrupt(void) {
     // Sobre corriente en el buck
     if(PWMCON1bits.FLTSTAT) {
         buckStatus.currentLimitFired = 1;
-        FAULT_LAT = 1;
+        FAULT_LAT = 0;
+        IFS1bits.AC1IF = 0;
     }
     
     IFS5bits.PWM1IF = 0;
@@ -221,11 +161,11 @@ void __attribute__((__interrupt__, no_auto_psv)) _CMP3Interrupt(void) {
 void smpsInit(void){   
     // Salidas de estado
     FAULT_TRIS = 0;
-    FAULT_LAT = 0;
+    FAULT_LAT = 1;
     PWR_GOOD_TRIS = 0;
     PWR_GOOD_LAT = 0;
     
-    // Estados de ambos Buck
+    // Inicialización de las estructuras de cada salida
     buckStatus.PID.integralTerm = 0;
     buckStatus.PID.kp = BUCK_KP;
     buckStatus.PID.ki = BUCK_KI;
@@ -240,18 +180,21 @@ void smpsInit(void){
     buckStatus.currentLimit = BUCK_MAX_CURRENT;
     buckStatus.enablePID = BUCK_DEFAULT_PID_ENABLE;
     buckStatus.outputVoltage = 0;
+    buckStatus.averagePower = 0;
     buckStatus.currentPowerSample = 0;
     
     aux5VStatus.current = 0;
     aux5VStatus.currentLimit = MAX_CURRENT_5V;
     aux5VStatus.PID.measuredOutput = 0;
     aux5VStatus.outputVoltage = 0;
+    aux5VStatus.averagePower = 0;
     aux5VStatus.currentPowerSample = 0;
     
     aux3V3Status.current = 0;
     aux3V3Status.currentLimit = MAX_CURRENT_3V3;
     aux3V3Status.PID.measuredOutput = 0;
     aux3V3Status.outputVoltage = 0;
+    aux3V3Status.averagePower = 0;
     aux3V3Status.currentPowerSample = 0;
     
     // Configuración general del modulo PWM
@@ -276,7 +219,6 @@ void smpsInit(void){
     
     // Override
     IOCON1bits.OVRDAT = 0;
-    IOCON2bits.OVRDAT = 0;
     IOCON1bits.OVRENH = 1;
     IOCON1bits.OVRENL = 1;
     
@@ -304,6 +246,7 @@ void smpsInit(void){
     auxEnable();
     
     ON_OFF_5V_TRIS = 0;
+    ON_OFF_5V_LAT = 0;
     PWR_GOOD_LAT = 1; 
 }
 
@@ -343,20 +286,34 @@ void smpsTasks(void) {
         aux3V3Status.averagePower = power;
         aux3V3Status.currentPowerSample = 0;
     }
+    
+    /*
+    if(counter >= 2048) {
+        counter = 0;
+        Nop();
+        Nop();
+    }*/
 }
 
 void buckEnable() {
+    uint16_t prevFaultMode = 0;
+    
     buckStatus.PID.integralTerm = 0;
     buckStatus.currentLimitFired = 0;
     buckStatus.enablePID = 1;
     buckStatus.enabled = 1;
-    FAULT_LAT = 0;
+    FAULT_LAT = 1;
     
-    // Borramos el bit FLTSTAT
-    PWMCON1bits.FLTIEN = 0;
+    // Pocedimiento para borrar condicion FAULT
+    IOCON1bits.OVRENH = 1;      // Activamos override (salidas a 0)
+    IOCON1bits.OVRENL = 1;
+    prevFaultMode = FCLCON1bits.FLTMOD;
+    FCLCON1bits.FLTMOD = 0b11;  // Desactivamos el modo fault
+    __delay_us(5);              // Delay de al menos un ciclo de PWM
+    FCLCON1bits.FLTMOD = prevFaultMode;
+    PWMCON1bits.FLTIEN = 0;     // Borramos el bit de status de fault
     PWMCON1bits.FLTIEN = 1;
-    
-    IOCON1bits.OVRENH = 0; 
+    IOCON1bits.OVRENH = 0;      // Desactivamos el override
     IOCON1bits.OVRENL = 0;
 }
 
@@ -368,7 +325,7 @@ void auxEnable() {
     aux5VStatus.enabled = 1;
     
     ON_OFF_5V_LAT = 0;
-    FAULT_LAT = 0;
+    FAULT_LAT = 1;
 }
 
 void buckDisable(void) {
@@ -395,7 +352,8 @@ void setBuckVoltage(uint16_t voltage) {
     //  correspondiente del ADC que debería ser leído aplicando el factor
     //  de corrección
     float v = (float)voltage * (float)BUCK_V_FEEDBACK_FACTOR;
-    buckStatus.PID.setpoint = getMatchedVoltageADCValue((uint16_t)(v*((float)BUCK_ADC_COUNTS/(ADC_VREF*1000.0))));
+    buckStatus.PID.setpoint = getInverseMatchedADCValue((uint16_t)(v*((float)BUCK_VOLTAGE_ADC_COUNTS/(ADC_VREF*1000.0))),
+            BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
 }
 
 /**
@@ -455,42 +413,49 @@ void set3V3CurrentLimit(uint16_t currentLimit) {
     aux3V3Status.currentLimit = ref;
 }
 
-uint16_t getMatchedVoltageADCValue(uint16_t adcValue) {
-    return _getMatchedADCValue(adcValue, adcVoltageErrorTable, ADC_VOLTAGE_ERROR_TABLE_SIZE);
+/**
+ * Calcula el valor del ADC real con corrección aplicada a partir de un valor de
+ *  ADC leído desde el módulo. Se aplica la siguiente ecuación:
+ * 
+ *  ADC Corregido = (adcValue * gain) + offset
+ * 
+ * En donde la ganancia "gain" y el offset se calculan de la siguiente manera
+ *  considerando que se toman 2 muestras de tensiones en el ADC en cada uno de
+ *  los extremos del rango de tensión de trabajo donde el punto 2 es el de
+ *  mayor valor:
+ * 
+ *      gain = (Ideal2 - Ideal1) / (Leido2 - Leido1)
+ * 
+ *      offset = Ideal1 - (gain * Leido1)
+ * 
+ * @param adcValue valor del ADC a corregir
+ * @param offset offset del ADC a corregir
+ * @param gain ganancia del ADC a corregir
+ * @return valor del ADC corregido
+ */
+uint16_t getMatchedADCValue(uint16_t adcValue, float offset, float gain) {
+    return (uint16_t)((float)adcValue * gain + offset);
+}
+
+/**
+ * Calcula el valor que debería leer el ADC a partir del valor ideal que debería
+ *  leer si fuera un ADC perfecto sin errores. Utiliza la ecuación:
+ * 
+ *      Valor ADC para leer = (Valor_ADC_Ideal - offset) / gain
+ * 
+ * Para más información leer los comentarios de la función getMatchedADCValue()
+ * 
+ * @param adcValue valor del ADC a corregir
+ * @param offset offset del ADC a corregir
+ * @param gain ganancia del ADC a corregir
+ * @return valor del ADC corregido
+ */
+uint16_t getInverseMatchedADCValue(uint16_t adcValue, float offset, float gain) {
+    return (uint16_t)(((float)adcValue - offset) / gain);
 }
 
 uint16_t getMatchedCurrentADCValue(uint16_t adcValue) {
-    return _getMatchedADCValue(adcValue, adcCurrentErrorTable, ADC_CURRENT_ERROR_TABLE_SIZE);
-}
-
-uint16_t _getMatchedADCValue(uint16_t adcValue, const int16_t table[][2], uint16_t size) {
-    uint16_t index;
-    double newADCValue;
-    
-    // Encontramos primero el valor de ADC mas cercano en la tabla
-    for(index = 0; index < size; ++index) {
-        if(table[index][0] >= adcValue) {
-            break;
-        }
-    }
-    
-    // Calculamos la corrección que debe ser aplicada (interpolando de ser
-    //  necesario)
-    if(table[index][0] == adcValue) {
-        return adcValue + table[index][1];
-    }
-    // Interpolamos el error
-    else {
-        // interpolación
-        double escala = (double)(table[index][1] - table[index-1][1]) / 
-            (double)(table[index][0] - table[index-1][0]);
-        newADCValue = ((double)table[index-1][1]) + escala * (double)(adcValue - table[index-1][0]);
-        
-        // Redondeo
-        newADCValue = floor(newADCValue + 0.5);
-        
-        return adcValue + ((uint16_t)newADCValue);
-    }
+    return adcValue;
 }
 
 void _initBuckPWM(PowerSupplyStatus *data) {
@@ -523,11 +488,11 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     FCLCON1bits.FLTMOD = 0b00;      // FAULT activado y modo latch
     
     TRIG1 = data->pTrigger;     // Trigger principal
-    //STRIG1 = 3000;            // Trigger secundario
+    STRIG1 = data->pTrigger;    // Trigger secundario
     TRGCON1bits.DTM = 0;        // Generamos triggers principales y secundarios (no combinados)
     TRGCON1bits.TRGSTRT = 0;    // Esperamos 0 ciclos de PWM al iniciar el modulo antes
                                 //  de comenzar a contar los ciclos para el trigger
-    TRGCON1bits.TRGDIV = 4;     // Cada 5 periodos del PWM se genera un evento de
+    TRGCON1bits.TRGDIV = 2;     // Cada 3 periodos del PWM se genera un evento de
                                 //  trigger
 
     IOCON1bits.PENH = 0;        // Pin PWMH deshabilitado
@@ -657,7 +622,7 @@ void _initADC(void) {
     //
     // Conversion time  = 8 * Tcoresrc + (Resolution + 2.5) * Tadcore
     //                  = 8 * (1/117.92Mhz) + (12 + 2.5) * (1/58.96Mhz)
-    //                  = 314 ns = 3.18 MSPS
+    //                  = 314 ns + 33.92ns (sampling) = 2.87 MSPS
     // Core 0
     ADCORE0Lbits.SAMC = 0;      // 2 Tad sample time
     ADCORE0Hbits.RES = 0b11;    // 12 bit de resolución
@@ -742,35 +707,25 @@ void _initADC(void) {
     ADFL0CONbits.FLEN = 0;
     ADFL0CONbits.MODE = 0b00;       // Modo oversampling
     ADFL0CONbits.OVRSAM = 0b001;    // 16x oversampling (2 bit adicionales)
-    ADFL0CONbits.FLCHSEL = 0;       // AN0 para el filtro digital 0
+    ADFL0CONbits.FLCHSEL = 1;       // AN1 para el filtro digital 0
     ADFL0CONbits.IE = 1;            // Interrupción habilitada
     ADFL0CONbits.FLEN = 1;
     
-    ADFL1CONbits.FLEN = 0;
-    ADFL1CONbits.MODE = 0b00;       // Modo oversampling
-    ADFL1CONbits.OVRSAM = 0b001;    // 16x oversampling (2 bit adicionales)
-    ADFL1CONbits.FLCHSEL = 1;       // AN1 para el filtro digital 1
-    ADFL1CONbits.IE = 1;            // Interrupción habilitada
-    ADFL1CONbits.FLEN = 1;
-    
     // Interrupciones filtros
     IFS11bits.ADFLTR0IF = 0;         // Borramos flag de interrupción
-    IFS11bits.ADFLTR1IF = 0;
     IPC44bits.ADFLTR0IP = 6;         // Prioridad 6 para filter 0 (current buck)
-    IPC45bits.ADFLTR1IP = 5;         // Prioridad 5 para filter 1 (voltage buck)
     IEC11bits.ADFLTR0IE = 1;         // Habilitamos interrupción de los filtros
-    IEC11bits.ADFLTR1IE = 1;         // Habilitamos interrupción de los filtros
     
     // Interrupciones de canales
     // AN0 (buck current)
     IFS6bits.ADCAN0IF = 0;
-    IEC6bits.ADCAN0IE = 0;
-    IPC27bits.ADCAN0IP = 0;         // Este canal trabaja a través del filtro únicamente
+    IEC6bits.ADCAN0IE = 1;
+    IPC27bits.ADCAN0IP = 5;
     
     // AN1 (buck voltage)
     IFS6bits.ADCAN1IF = 0;
     IEC6bits.ADCAN1IE = 0;
-    IPC27bits.ADCAN1IP = 0;         // Este canal trabaja a través del filtro únicamente
+    IPC27bits.ADCAN1IP = 6;         // Este canal trabaja a través del filtro únicamente
     
     // AN2 (5v current)
     IFS7bits.ADCAN2IF = 0;
@@ -839,6 +794,7 @@ void _initComparators(void) {
     // Interrupciones
     IEC1bits.AC1IE = 0;             // Este comparador va a la entrada FAULT del modulo PWM
                                     //  y se genera una interrupción por FAULT
+    IFS1bits.AC1IF = 0;
     
     IFS6bits.AC2IF = 0;
     IPC25bits.AC2IP = 7;            // Prioridad máxima
@@ -854,7 +810,7 @@ void _initComparators(void) {
     CMP3DACbits.CMREF = MAX_CURRENT_3V3;
     
     // Encendido de los comparadores
-    CMP1CONbits.CMPON = 0;
-    CMP2CONbits.CMPON = 0;
-    CMP3CONbits.CMPON = 0;
+    CMP1CONbits.CMPON = 1;
+    CMP2CONbits.CMPON = 1;
+    CMP3CONbits.CMPON = 1;
 }

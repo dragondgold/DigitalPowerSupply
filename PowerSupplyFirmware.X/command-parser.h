@@ -4,12 +4,9 @@
 #include <stdint.h>
 #include "smps.h"
 
-// ~75ms
-#define TIMER_VALUE                     45000
-
 #define TIMEOUT                         10000
 #define ACK                             0x06
-#define ACK_ERROR                       0x01
+#define ACK_STRING                      0x01
 #define NACK                            0xFF
 
 #define SET_BUCK_VOLTAGE                1

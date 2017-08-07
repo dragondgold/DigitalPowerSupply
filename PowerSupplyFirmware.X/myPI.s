@@ -1,5 +1,6 @@
 .global _myPI
 
+; https://www.embeddedrelated.com/showarticle/121.php
 ; w0 = Puntero a la estructura del controlador PI
 
 _myPI:
@@ -35,7 +36,7 @@ _myPI:
     mov	    w0, ACCBH
 
 ; Calculamos el termino integral:
-; integral = integral + Ki*e
+; integral = integral + Ki*e ---- Ki ya está multiplicado por el período de muestreo
 ; b	   =    b     + w4*w7
     mac	    w4*w7, b
 

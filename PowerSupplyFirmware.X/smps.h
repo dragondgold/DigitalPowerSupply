@@ -19,8 +19,8 @@
 #define setBuckDuty(duty)       PDC1 = SDC1 = duty
 #define getBuckDuty()           PDC1
 
-#define buckEmergency()         IOCON1bits.OVRENH = 1; IOCON1bits.OVRENL = 1; FAULT_LAT = 1;
-#define auxEmergency()          ON_OFF_5V_LAT = 1; FAULT_LAT = 1;
+#define buckEmergency()         IOCON1bits.OVRENH = 1; IOCON1bits.OVRENL = 1; FAULT_LAT = 0;
+#define auxEmergency()          ON_OFF_5V_LAT = 1; FAULT_LAT = 0;
 
 #define setChannelsStep1()      setBuckChannels()
 #define setChannelsStep2()      set3V3Channels()
@@ -87,12 +87,12 @@ void setBuckCurrentLimit(uint16_t currentLimit);
 void set5VCurrentLimit(uint16_t currentLimit);
 void set3V3CurrentLimit(uint16_t currentLimit);
 
-uint16_t getMatchedVoltageADCValue(uint16_t adcValue);
+uint16_t getMatchedADCValue(uint16_t adcValue, float offset, float gain);
+uint16_t getInverseMatchedADCValue(uint16_t adcValue, float offset, float gain);
 uint16_t getMatchedCurrentADCValue(uint16_t adcValue);
 
 void _initBuckPWM(PowerSupplyStatus *data);
 void _initADC(void);
 void _initComparators(void);
-uint16_t _getMatchedADCValue(uint16_t adcValue, const int16_t table[][2], uint16_t size);
 
 #endif	/* SMPS_H */

@@ -16,7 +16,8 @@ extern PowerSupplyStatus aux5VStatus;
 extern PowerSupplyStatus aux3V3Status;
 
 static float v;
-static uint16_t status, a;
+static uint16_t a;
+static int16_t status;
 
 void initCommandParser(void) {
     RX_TRIS = 1;
@@ -46,34 +47,12 @@ void initCommandParser(void) {
                                         // de haber habilitado el modulo)
     
     __delay_us(10);
-    
-    // Configuramos el timer para realizar el envío de datos cada cierto tiempo
-    T1CONbits.TON = 0;
-    T1CONbits.TSIDL = 0;
-    T1CONbits.TGATE = 0;
-    T1CONbits.TCKPS = 0b11;             // Prescaler 1:256
-    T1CONbits.TCS = 0;
-    
-    TMR1 = TIMER_VALUE;
-    IFS0bits.T1IF = 0;
-    T1CONbits.TON = 1;
 }
 
 void commandParserTasks(void) {
     if(U1STAbits.OERR) U1STAbits.OERR = 0;
     if(DataRdyUART1()) {
         _decodeCommand(_waitAndReceive());
-    }
-    
-    // En el desborde del timer enviamos los datos
-    if(IFS0bits.T1IF) {
-        _constructDataString(buffer);
-        WriteUART1(ACK);
-        putsUART1((unsigned int *)buffer);
-        WriteUART1('\0');
-        
-        TMR1 = TIMER_VALUE;
-        IFS0bits.T1IF = 0;
     }
 }
 
@@ -86,7 +65,7 @@ uint16_t _waitAndReceive(void) {
 int16_t _readStringWithTimeout(uint16_t timeout) {
     uint16_t time = timeout;
     uint16_t index = 0;
-    uint16_t maxSize = sizeof(buffer);
+    uint16_t maxSize = 100;
     
     do{
         while(!DataRdyUART1()){
@@ -111,7 +90,8 @@ int16_t _readStringWithTimeout(uint16_t timeout) {
  * @return Tensión del buck en volts
  */
 float getBuckVoltage() {
-    return (((float)getMatchedVoltageADCValue(buckStatus.outputVoltage))*(ADC_VREF/(float)BUCK_ADC_COUNTS)) / (float)BUCK_V_FEEDBACK_FACTOR;
+    uint16_t matched = getMatchedADCValue(buckStatus.outputVoltage, BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
+    return ((float)matched*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS)) / (float)BUCK_V_FEEDBACK_FACTOR;
 }
 
 /**
@@ -119,7 +99,7 @@ float getBuckVoltage() {
  * @return Corriente del buck en amperes
  */
 float getBuckCurrent() {
-    return (((float)getMatchedCurrentADCValue(buckStatus.current))*(ADC_VREF/(float)BUCK_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
+    return ((float)getMatchedCurrentADCValue(buckStatus.current)*(ADC_VREF/(float)BUCK_CURRENT_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -135,7 +115,8 @@ float getBuckPower() {
  * @return Corriente límite del buck en amperes
  */
 float getBuckCurrentLimit() {
-    return ((float)buckStatus.currentLimit*(ADC_VREF / (float)BUCK_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
+    float i = ((float)buckStatus.currentLimit*(ADC_VREF / (float)4096)) / (float)BUCK_I_FEEDBACK_FACTOR;
+    return i;
 }
 
 /**
@@ -143,7 +124,8 @@ float getBuckCurrentLimit() {
  * @return Tensión de la línea de 5V en volts
  */
 float get5VVoltage() {
-    return (((float)aux5VStatus.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_V_FEEDBACK_FACTOR;
+    uint16_t matched = getMatchedADCValue(aux5VStatus.outputVoltage, AUX_5V_VOLTAGE_OFFSET, AUX_5V_VOLTAGE_GAIN);
+    return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_V_FEEDBACK_FACTOR;
 }
 
 /**
@@ -151,7 +133,7 @@ float get5VVoltage() {
  * @return Corriente de la línea de 5V en amperes
  */
 float get5VCurrent() {
-    return (((float)getMatchedCurrentADCValue(aux5VStatus.current))*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR;
+    return (((float)aux5VStatus.current)*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -175,7 +157,8 @@ float get5VCurrentLimit() {
  * @return Tensión de la línea de 3.3V en volts
  */
 float get3V3Voltage() {
-    return (((float)aux3V3Status.outputVoltage)*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_V_FEEDBACK_FACTOR;
+    uint16_t matched = getMatchedADCValue(aux3V3Status.outputVoltage, AUX_3V3_VOLTAGE_OFFSET, AUX_3V3_VOLTAGE_GAIN);
+    return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_V_FEEDBACK_FACTOR;
 }
 
 /**
@@ -183,7 +166,7 @@ float get3V3Voltage() {
  * @return Corriente de la línea de 3.3V en amperes
  */
 float get3V3Current() {
-    return (((float)getMatchedCurrentADCValue(aux3V3Status.current))*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR;
+    return (((float)aux3V3Status.current)*((ADC_VREF)/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_I_FEEDBACK_FACTOR;
 }
 
 /**
@@ -203,7 +186,7 @@ float get3V3CurrentLimit() {
 }
 
 void _constructDataString(char *buffer) {
-    sprintf(buffer, "%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f;%.2f;%.3f", 
+    sprintf(buffer, "%05.2f;%.3f;%05.2f;%.3f;%05.2f;%.3f;%05.2f;%.3f;%05.2f;%.3f;%05.2f;%.3f", 
             getBuckVoltage(), getBuckCurrent(), getBuckPower(), getBuckCurrentLimit(),
             get5VVoltage(), get5VCurrent(), get5VPower(), get5VCurrentLimit(),
             get3V3Voltage(), get3V3Current(), get3V3Power(), get3V3CurrentLimit());
@@ -290,7 +273,7 @@ void _decodeCommand(uint16_t command){
             WriteUART1(ACK);
             a = (uint16_t)get5VCurrent();
             
-            // No mostramos mas de 3 digitos
+            // No mostramos mas de 3 dígitos
             if(a > 999) a = 999;
             sprintf(buffer, "%u", a);
             WriteUART1('.');
@@ -312,7 +295,7 @@ void _decodeCommand(uint16_t command){
             WriteUART1(ACK);
             a = (uint16_t)get3V3Current();
             
-            // No mostramos mas de 3 digitos
+            // No mostramos mas de 3 dígitos
             if(a > 999) a = 999;
             sprintf(buffer, "%u", a);
             WriteUART1('.');
@@ -333,6 +316,7 @@ void _decodeCommand(uint16_t command){
             status = _readStringWithTimeout(TIMEOUT);
             if(status == 0) {
                 double i = atof(buffer);
+                Nop();
                 setBuckCurrentLimit((uint16_t)(i*1000.0));
             }
             break;
@@ -389,13 +373,14 @@ void _decodeCommand(uint16_t command){
             
         case GET_BUCK_SETPOINT:
             WriteUART1(ACK);
-            v = ((float)buckStatus.PID.setpoint)*(ADC_VREF/(float)BUCK_ADC_COUNTS);
+            v = ((float)buckStatus.PID.setpoint)*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS);
             sprintf(buffer, "%.2f", v/BUCK_V_FEEDBACK_FACTOR);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
             break;
             
         case GET_ALL_STRING:
+            WriteUART1(ACK);
             _constructDataString(buffer);
             putsUART1((unsigned int *)buffer);
             break;
