@@ -11,10 +11,10 @@
 #define reset                           8
 #define brightness                      6
 
-#define rightBtn                        4
-#define leftBtn                         3
-#define enterBtn                        2
-#define cancelBtn                      12
+#define rightBtn                        3
+#define leftBtn                         4
+#define enterBtn                        12
+#define cancelBtn                       2
 #define fault                           5
 #define powerGood                       7
 
@@ -88,7 +88,7 @@
 #define OK_BTN                          1
 #define CANCEL_BTN                      2
 
-U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
+U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R0, sck, mosi, cs, a0 , reset);
 
 String VBuck= "0.0", IBuck = "0.0",PBuck = "0.0",IBLIM = "0.0";
 String V5V= "0.0", I5V = "0.0",P5V = "0.0",I5VLIM = "0.0";
@@ -110,10 +110,10 @@ bool modifyStep = false;
 bool retrySendCommand = false;
 uint8_t stepMultiplier = 1;
 
-float setPointVBuck = BUCKVMIN;
-float setPointIBuck = BUCKCURRENTMIN;
-float setPointI5V = I5VCURRENTMIN;
-float setPointI3V3 = I3V3CURRENTMIN;
+volatile float setPointVBuck = 4.0;
+volatile float setPointIBuck = 1.0;
+volatile float setPointI5V = I5VCURRENTMIN;
+volatile float setPointI3V3 = I3V3CURRENTMIN;
 
 uint8_t numberOfProfiles = 0 ; 
 String listOfProfiles = "";
@@ -121,8 +121,8 @@ String listOfProfiles = "";
 // Menu list
 const char *menu_list = 
           "Buck\n"
-          "Profiles\n"
-          "About";
+          "Profiles";
+          
 
 const char *buck_list =
           "Enable Buck\n"
@@ -163,15 +163,17 @@ void setup() {
 
   u8g2.setFont(u8g2_font_6x12_tr);
 
-  EEPROM.get(BRIGHTNESS_ADDRESS , brightnessValue);
-  EEPROM.get(CONTRAST_ADDRESS , contrastValue);
+  //EEPROM.get(BRIGHTNESS_ADDRESS , brightnessValue);
+  //EEPROM.get(CONTRAST_ADDRESS , contrastValue);
   EEPROM.get(PROFILES_START_ADDRRESS , numberOfProfiles);
-  u8g2.setContrast(contrastValue);
+  //u8g2.setContrast(contrastValue);
   setBrightness(brightnessValue);
 
   // Attach the new PinChangeInterrupt and enable event function below
   attachPCINT(digitalPinToPCINT(fault), showError, CHANGE);
 }
+
+//01010000 
 
 void loop() {
 
@@ -181,8 +183,7 @@ void loop() {
   {
     showAllData();
   } while (u8g2.nextPage());
-  
-  delay(35);
+  delay(30);
 
   if(anErrorOcurred){  
     errorCode = getByteCommand(GET_STATUS);     
@@ -300,9 +301,9 @@ void showAllData(){
         if(menu > 4){
           menu = 0;
         }
-      }else{ // increase selected value
-        increase = true;
-        decrease = false;
+      }else{ // decrease selected value
+        increase = false;
+        decrease = true;
       }
     }else if(menuKey == U8X8_MSG_GPIO_MENU_PREV){
       if(!changeParam){
@@ -310,23 +311,59 @@ void showAllData(){
         if(menu < 0){
           menu = 4;
         }
-      }else{ // decrease selected value
-        increase = false;
-        decrease = true; // decrease
+      }else{ // increase selected value
+        increase = true;
+        decrease = false; // decrease
       }
     }else if(menuKey == U8X8_MSG_GPIO_MENU_SELECT){
       if(!modifyingParam){
         changeParam = !changeParam;
         modifyStep = false;
         modifyingParam =true;
-        //setPointVBuck =
-        //setPointVBuck
-        
+        retrySendCommand = true;
+
+        switch(menu){
+          case 0 : 
+            retrySendCommand = false;
+            break;
+          
+          case 1: // VB
+            
+            if(setCommand(SET_BUCK_VOLTAGE, setPointVBuck)){
+              retrySendCommand =false;
+            }else{
+              retrySendCommand =true;
+            }   
+            
+            break;
+          case 2: // IB
+            if(setCommand(SET_BUCK_CURRENT_LIMIT, setPointIBuck)){
+              retrySendCommand =false;
+            }else{
+              retrySendCommand =true;
+            }   
+            break;
+          case 3: // I5V
+            if(setCommand(SET_5V_CURRENT_LIMIT, setPointI5V)){
+              retrySendCommand =false;
+            }else{
+              retrySendCommand =true;
+            }              
+            break;
+          case 4: // I3V3
+            if(setCommand(SET_3V3_CURRENT_LIMIT, setPointI3V3)){
+              retrySendCommand =false;
+            }else{
+              retrySendCommand =true;
+            }              
+            break;      
+        }
+            
       }else{
         modifyingParam =false;
         modifyStep =true;
       }            
-    }else if(menuKey == U8X8_MSG_GPIO_MENU_HOME){
+    }else if(menuKey == U8X8_MSG_GPIO_MENU_HOME){    
       showMenu();     
     }
 
@@ -355,8 +392,8 @@ void showAllData(){
             setPointVBuck = BUCKVMIN;
           }
 
-          if(increase || decrease || retrySendCommand || !changeParam ){
-            delay(50);
+
+          if(increase || decrease || retrySendCommand){
             if(setCommand(SET_BUCK_VOLTAGE, setPointVBuck)){
               retrySendCommand =false;
             }else{
@@ -392,14 +429,6 @@ void showAllData(){
             setPointIBuck = BUCKCURRENTMIN;
           }
 
-          if(increase || decrease || retrySendCommand){
-            if(setCommand(SET_BUCK_CURRENT_LIMIT, setPointIBuck)){
-              retrySendCommand =false;
-            }else{
-              retrySendCommand =true;
-            }   
-          }
-
           char buffer[4]; 
           const char *s = dtostrf(setPointIBuck, 1, 2, buffer);
           
@@ -425,14 +454,6 @@ void showAllData(){
           }
           if(setPointI5V < I5VCURRENTMIN){
             setPointI5V = I5VCURRENTMIN;
-          }
-
-          if(increase || decrease || retrySendCommand){
-            if(setCommand(SET_5V_CURRENT_LIMIT, setPointI5V)){
-              retrySendCommand =false;
-            }else{
-              retrySendCommand =true;
-            }   
           }
 
           char buffer[4]; 
@@ -462,14 +483,6 @@ void showAllData(){
             setPointI3V3 = I3V3CURRENTMIN;
           }
           
-          if(increase || decrease || retrySendCommand){
-            if(setCommand(SET_3V3_CURRENT_LIMIT, setPointI3V3)){
-              retrySendCommand =false;
-            }else{
-              retrySendCommand =true;
-            }   
-          }
-            
           char buffer[4]; 
           const char *s = dtostrf(setPointI3V3, 1, 2, buffer);
                             
@@ -504,11 +517,7 @@ void showMenu(){
               break;
             case 2:   // enable aux
               setCommandWithoutData(ENABLE_AUX); 
-              break;
-            case 3:   //change kp
-              break;
-            case 4:   //change ki
-              break;                                      
+              break;                                    
           }
           break;
         case 2:
@@ -519,16 +528,18 @@ void showMenu(){
                               profile_list);
               switch(current_selection){
                 case 1:   // Save profile
-                  createProfile(); 
+                  if(numberOfProfiles < PROFILES_ALLOWED){
+                    saveProfile();
+                  }else{
+                    overwriteProfile(showProfiles());
+                  }
                   break;
                 case 2:   // Load profile
                   loadProfile(showProfiles());
                   break;
                 case 3:   // Delete all
                   deleteAllProfiles();
-                  break;
-                case 4:   
-                  break;                                      
+                  break;                                     
               } 
           }                 
           break;
@@ -693,7 +704,7 @@ uint8_t showProfiles(){
     Serial.print(String(numberOfProfiles));
     if(numberOfProfiles > 0){
       for(uint8_t n = 0; n < numberOfProfiles ; n++){
-        uint8_t startAddr = PROFILES_START_ADDRRESS + 1 +  n*sizeof(float)*4;
+        uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) +  n*sizeof(float)*4;
         float vBuck = 0.0;
         float iBuck = 0.0;
         float i5V = 0.0;
@@ -724,21 +735,12 @@ uint8_t showProfiles(){
     }
 }
 
-void createProfile() 
-{  
-    if(numberOfProfiles < PROFILES_ALLOWED){
-      saveProfile();
-    }else{
-      overwriteProfile(showProfiles());
-    }
-}
-
 void loadProfile(uint8_t profileNumber) 
 {
     if(profileNumber == 255){
      return 0;
     }  
-    uint8_t startAddr = PROFILES_START_ADDRRESS + 1 +  profileNumber*sizeof(float)*4;
+    uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) +  profileNumber*sizeof(float)*4;
     float vBuck = 0.0;
     float iBuck = 0.0;
     float i5V = 0.0;
@@ -751,39 +753,38 @@ void loadProfile(uint8_t profileNumber)
 
     // Check for invalid parameters. This happens when trying to load
     //  a profile that was never saved
-    if(isnan(setPointVBuck)){
+    if(isnan(vBuck)){
       vBuck = BUCKVMIN;
     }
-    if(isnan(setPointIBuck)){
+    if(isnan(iBuck)){
       iBuck = BUCKCURRENTMIN;
     }
-    if(isnan(setPointI5V)){
+    if(isnan(i5V)){
       i5V = I5VCURRENTMIN;
     }
-    if(isnan(setPointI3V3)){
+    if(isnan(i3V3)){
       i3V3 = I3V3CURRENTMIN;
     }
 
     String profileName1 =  "B:"+ String(vBuck) + "V " + String(iBuck)+ "A";
     String profileName2 =  "5V:" + String(i5V) + "A 3V3:" + String(i3V3) + "A ?";  
     uint8_t selection =  u8g2.userInterfaceMessage("Are you sure to load", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
-  
+
+   // 10001100 01110100 000110010 
     switch(selection){
       case OK_BTN:
         setPointVBuck = vBuck;
         setPointIBuck = iBuck;
         setPointI5V = i5V;
         setPointI3V3 = i3V3;
-
-        setCommand(SET_BUCK_VOLTAGE,          setPointVBuck);
-        setCommand(SET_BUCK_CURRENT_LIMIT,    setPointIBuck);
-        setCommand(SET_5V_CURRENT_LIMIT,      setPointI5V);
-        setCommand(SET_3V3_CURRENT_LIMIT,     setPointI3V3);
-  
+      
+        setCommand(SET_BUCK_VOLTAGE,setPointVBuck);
+        //setCommand(SET_BUCK_CURRENT_LIMIT,    setPointIBuck);
+        //setCommand(SET_5V_CURRENT_LIMIT,      setPointI5V);
+        //setCommand(SET_3V3_CURRENT_LIMIT,     setPointI3V3);
         u8g2.userInterfaceMessage("Profile loaded ", "correctly!","", " Ok ");
-        break;
-      case CANCEL_BTN:
-  
+        //setCommandWithoutData(ENABLE_BUCK);
+        //setCommandWithoutData(ENABLE_AUX); 
         break;
     }
 }
@@ -792,7 +793,7 @@ void loadProfile(uint8_t profileNumber)
 void saveProfile(){
 
   numberOfProfiles++;
-  uint8_t startAddr = PROFILES_START_ADDRRESS + 1 + numberOfProfiles * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
+  uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) + numberOfProfiles * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
   String profileName1 =  "B:"+ String(setPointVBuck) + "V " + String(setPointIBuck)+ "A";
   String profileName2 =  "5V:" + String(setPointI5V) + "A 3V3:" + String(setPointI3V3) + "A ?";  
   uint8_t selection =  u8g2.userInterfaceMessage("Add new profile", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
@@ -816,7 +817,7 @@ void overwriteProfile(uint8_t order){
   if(order == 255){
     return 0;
   }
-  uint8_t startAddr = PROFILES_START_ADDRRESS + 1 + order * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
+  uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) + order * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
 
   float vBuck = 0.0;
   float iBuck = 0.0;
@@ -839,9 +840,6 @@ void overwriteProfile(uint8_t order){
       EEPROM.put(startAddr+sizeof(float)*2,   setPointI5V);
       EEPROM.put(startAddr+sizeof(float)*3,   setPointI3V3);
       u8g2.userInterfaceMessage("Profile overwrited ", "correctly!","", " Ok ");
-      break;
-    case CANCEL_BTN:
-
       break;
   }
 }
@@ -870,6 +868,7 @@ uint8_t setCommand(uint8_t command, float value){
      delayMicroseconds(1000);
      counter++;
   }
+  //Serial.print("\n timeout value: " + String(counter) + "ms  value:"+ String(value) +"\n");
   if(Serial.read() == ACK ){    
     Serial.print(value,2);
     Serial.write('\0');
@@ -879,6 +878,9 @@ uint8_t setCommand(uint8_t command, float value){
 }
 
 void setCommandWithoutData(uint8_t command){
+  if(Serial.available()){
+    Serial.readStringUntil('\0');
+  } 
   Serial.write(command);
   uint8_t counter = 0;
   while(counter <= TIMEOUT &&  Serial.available() == 0){
@@ -921,3 +923,4 @@ byte getByteCommand(uint8_t command){
      return 255;
   }
 }
+
