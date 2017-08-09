@@ -112,8 +112,8 @@ uint8_t stepMultiplier = 1;
 
 volatile float setPointVBuck = 4.0;
 volatile float setPointIBuck = 1.0;
-volatile float setPointI5V = I5VCURRENTMIN;
-volatile float setPointI3V3 = I3V3CURRENTMIN;
+volatile float setPointI5V = 0.5;
+volatile float setPointI3V3 = 0.15;
 
 uint8_t numberOfProfiles = 0 ; 
 String listOfProfiles = "";
@@ -701,7 +701,6 @@ String getValue(String data, char separator, int index)
 uint8_t showProfiles(){
     // save profiles in listOfProfiles
     listOfProfiles = "";
-    Serial.print(String(numberOfProfiles));
     if(numberOfProfiles > 0){
       for(uint8_t n = 0; n < numberOfProfiles ; n++){
         uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) +  n*sizeof(float)*4;
@@ -766,11 +765,10 @@ void loadProfile(uint8_t profileNumber)
       i3V3 = I3V3CURRENTMIN;
     }
 
-    String profileName1 =  "B:"+ String(vBuck) + "V " + String(iBuck)+ "A";
-    String profileName2 =  "5V:" + String(i5V) + "A 3V3:" + String(i3V3) + "A ?";  
+    String profileName1 =  "  VB   IB  I5V  I3V3  ";
+    String profileName2 =  String(vBuck) + " " + String(iBuck)+ " " + String(i5V) +" " +  String(i3V3) + " ?";  
     uint8_t selection =  u8g2.userInterfaceMessage("Are you sure to load", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
-
-   // 10001100 01110100 000110010 
+    
     switch(selection){
       case OK_BTN:
         setPointVBuck = vBuck;
@@ -779,12 +777,10 @@ void loadProfile(uint8_t profileNumber)
         setPointI3V3 = i3V3;
       
         setCommand(SET_BUCK_VOLTAGE,setPointVBuck);
-        //setCommand(SET_BUCK_CURRENT_LIMIT,    setPointIBuck);
-        //setCommand(SET_5V_CURRENT_LIMIT,      setPointI5V);
-        //setCommand(SET_3V3_CURRENT_LIMIT,     setPointI3V3);
-        u8g2.userInterfaceMessage("Profile loaded ", "correctly!","", " Ok ");
-        //setCommandWithoutData(ENABLE_BUCK);
-        //setCommandWithoutData(ENABLE_AUX); 
+        setCommand(SET_BUCK_CURRENT_LIMIT,setPointIBuck);
+        setCommand(SET_5V_CURRENT_LIMIT,setPointI5V);
+        setCommand(SET_3V3_CURRENT_LIMIT,setPointI3V3);
+        u8g2.userInterfaceMessage("Profile loaded ", "correctly!","", " Ok "); 
         break;
     }
 }
@@ -794,8 +790,8 @@ void saveProfile(){
 
   numberOfProfiles++;
   uint8_t startAddr = PROFILES_START_ADDRRESS + sizeof(uint8_t) + numberOfProfiles * sizeof(float)* 4 ; // profileNumber*sizeof(float)*6;
-  String profileName1 =  "B:"+ String(setPointVBuck) + "V " + String(setPointIBuck)+ "A";
-  String profileName2 =  "5V:" + String(setPointI5V) + "A 3V3:" + String(setPointI3V3) + "A ?";  
+  String profileName1 =  "  VB   IB  I5V  I3V3  ";
+  String profileName2 =  String(setPointVBuck) + " " + String(setPointIBuck)+ " " + String(setPointI5V) +" " +  String(setPointI3V3) + " ?";   
   uint8_t selection =  u8g2.userInterfaceMessage("Add new profile", profileName1.c_str(),profileName2.c_str() , " Ok \n Cancel ");
   switch(selection){
     case OK_BTN:
@@ -829,9 +825,9 @@ void overwriteProfile(uint8_t order){
   EEPROM.get(startAddr+sizeof(float)*2,   i5V);
   EEPROM.get(startAddr+sizeof(float)*3,   i3V3);
 
-  String profileName1 =  "B:"+ String(vBuck) + "V " + String(iBuck)+ "A";
-  String profileName2 =  "5V:" + String(i5V) + "A 3V3:" + String(i3V3) + "A ?";  
-  uint8_t selection =  u8g2.userInterfaceMessage(" Overwrite? ", profileName1.c_str() ,profileName2.c_str() , " Ok \n Cancel ");
+  String profileName1 =  "  VB   IB  I5V  I3V3  ";
+  String profileName2 =  String(vBuck) + " " + String(iBuck)+ " " + String(i5V) +" " +  String(i3V3) + " ?"; 
+  uint8_t selection =  u8g2.userInterfaceMessage(" Overwrite profile: ", profileName1.c_str() ,profileName2.c_str() , " Ok \n Cancel ");
 
   switch(selection){
     case OK_BTN:
@@ -862,6 +858,7 @@ void setBrightness(uint8_t value){
 }
 
 uint8_t setCommand(uint8_t command, float value){
+  flushSerial();
   Serial.write(command);  
   uint8_t counter = 0;
   while(counter <= TIMEOUT &&  Serial.available() == 0){
@@ -878,9 +875,7 @@ uint8_t setCommand(uint8_t command, float value){
 }
 
 void setCommandWithoutData(uint8_t command){
-  if(Serial.available()){
-    Serial.readStringUntil('\0');
-  } 
+  flushSerial();
   Serial.write(command);
   uint8_t counter = 0;
   while(counter <= TIMEOUT &&  Serial.available() == 0){
@@ -893,6 +888,7 @@ void setCommandWithoutData(uint8_t command){
 }
 
 String getCommand(uint8_t command){
+  flushSerial();
   Serial.write(command);
   uint8_t counter = 0;
   //timeNow = micros()*1000;
@@ -908,6 +904,7 @@ String getCommand(uint8_t command){
 }
 
 byte getByteCommand(uint8_t command){
+  flushSerial();
   Serial.write(command);
   uint8_t counter = 0;
   //timeNow = micros()*1000;
@@ -921,6 +918,12 @@ byte getByteCommand(uint8_t command){
      return a[0];
   } else{
      return 255;
+  }
+}
+
+void flushSerial(){
+  while(Serial.available() > 0) {
+    char t = Serial.read();
   }
 }
 
