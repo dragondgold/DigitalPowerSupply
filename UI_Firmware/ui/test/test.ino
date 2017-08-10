@@ -294,10 +294,9 @@ void showAllData(){
 
     // Ajuste
     u8g2.setColorIndex(0);
-    u8g2.drawStr( 111, 8, (ajuste).c_str());
+    u8g2.drawStr( 110, 8, (ajuste).c_str());
     u8g2.setColorIndex(1);
-    
-    
+       
     uint8_t menuKey =  u8g2.getMenuEvent();
 
     increase = false;
