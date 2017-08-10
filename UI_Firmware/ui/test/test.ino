@@ -135,6 +135,9 @@ const char *profile_list =
           "Load existing\n"
           "Delete all";
 
+String  ajuste ="";
+
+
 // Prototipes
 void getAllData();
 void showAllData();
@@ -236,9 +239,10 @@ void showAllData(){
     u8g2.drawBox(108,8,9,64);
      
     u8g2.setColorIndex(0);
-    u8g2.drawStr( 11, 8, ("3V3"));
-    u8g2.drawStr( 49, 8, ("5V"));
-    u8g2.drawStr( 85, 8, ("B1"));
+
+    u8g2.drawStr( 11, 8, "3V3");
+    u8g2.drawStr( 49, 8, "5V");
+    u8g2.drawStr( 85, 8, "B");
  
     u8g2.drawStr( 110, 20, ("V"));
     u8g2.drawStr( 110, 33, ("A"));
@@ -287,6 +291,12 @@ void showAllData(){
     u8g2.drawStr( 76, 33, (IBuck).c_str());
     u8g2.drawStr( 76, 46, (PBuck).c_str());
     u8g2.drawStr( 76, 59, (IBLIM).c_str());
+
+    // Ajuste
+    u8g2.setColorIndex(0);
+    u8g2.drawStr( 111, 8, (ajuste).c_str());
+    u8g2.setColorIndex(1);
+    
     
     uint8_t menuKey =  u8g2.getMenuEvent();
 
@@ -321,7 +331,7 @@ void showAllData(){
         modifyStep = false;
         modifyingParam =true;
         retrySendCommand = true;
-
+        ajuste ="";
         switch(menu){
           case 0 : 
             retrySendCommand = false;
@@ -392,6 +402,11 @@ void showAllData(){
             setPointVBuck = BUCKVMIN;
           }
 
+          if(stepMultiplier == 1){
+            ajuste ="F";
+          }else{
+            ajuste ="G";
+          }
 
           if(increase || decrease || retrySendCommand){
             if(setCommand(SET_BUCK_VOLTAGE, setPointVBuck)){
@@ -429,6 +444,12 @@ void showAllData(){
             setPointIBuck = BUCKCURRENTMIN;
           }
 
+          if(stepMultiplier == 1){
+            ajuste ="F";
+          }else{
+            ajuste ="G";
+          }
+
           char buffer[4]; 
           const char *s = dtostrf(setPointIBuck, 1, 2, buffer);
           
@@ -456,6 +477,12 @@ void showAllData(){
             setPointI5V = I5VCURRENTMIN;
           }
 
+          if(stepMultiplier == 1){
+            ajuste ="F";
+          }else{
+            ajuste ="G";
+          }
+
           char buffer[4]; 
           const char *s = dtostrf(setPointI5V, 1, 2, buffer);
                   
@@ -481,6 +508,12 @@ void showAllData(){
           }
           if(setPointI3V3 < I3V3CURRENTMIN){
             setPointI3V3 = I3V3CURRENTMIN;
+          }
+          
+          if(stepMultiplier == 1){
+            ajuste ="F";
+          }else{
+            ajuste ="G";
           }
           
           char buffer[4]; 
