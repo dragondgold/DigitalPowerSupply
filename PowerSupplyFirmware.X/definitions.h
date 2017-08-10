@@ -30,9 +30,11 @@
 #define BUCK_PHASE                  3136    // 300kHz
 #define BUCK_MAX_DUTY_CYCLE         2822    // 90%
 #define BUCK_INITIAL_DUTY_CYCLE     (BUCK_MAX_DUTY_CYCLE/2)
-#define BUCK_MIN_DUTY_CYCLE         60      // 2%
+#define BUCK_MIN_DUTY_CYCLE         62      // 2%
 #define BUCK_DEAD_TIME              157     // 5%
 #define BUCK_MAX_CURRENT            3724    // 3A con 12 bit (del comparador)
+#define BUCK_MIN_VOLTAGE            1000    // 1V
+#define BUCK_MAX_VOLTAGE            25000   // 25V
 // El Kp dado en Matlab está en punto flotante y debido a que nuestro controlador PID
 //  solo funciona con enteros debemos escalar todo para trabajar en enteros.
 // La función de transferencia fue calculada considerando que se toma una señal de entrada

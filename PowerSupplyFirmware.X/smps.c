@@ -351,6 +351,13 @@ void setBuckVoltage(uint16_t voltage) {
     // Convertimos la tensión de salida en milivolts deseada al valor
     //  correspondiente del ADC que debería ser leído aplicando el factor
     //  de corrección
+    if(voltage < BUCK_MIN_VOLTAGE) {
+        voltage = BUCK_MIN_VOLTAGE;
+    }
+    else if(voltage > BUCK_MAX_VOLTAGE) {
+        voltage = BUCK_MAX_VOLTAGE;
+    }
+    
     float v = (float)voltage * (float)BUCK_V_FEEDBACK_FACTOR;
     buckStatus.PID.setpoint = getInverseMatchedADCValue((uint16_t)(v*((float)BUCK_VOLTAGE_ADC_COUNTS/(ADC_VREF*1000.0))),
             BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
