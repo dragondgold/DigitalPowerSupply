@@ -88,7 +88,7 @@
 #define OK_BTN                          1
 #define CANCEL_BTN                      2
 
-U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R0, sck, mosi, cs, a0 , reset);
+U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
 
 String VBuck= "0.0", IBuck = "0.0",PBuck = "0.0",IBLIM = "0.0";
 String V5V= "0.0", I5V = "0.0",P5V = "0.0",I5VLIM = "0.0";
