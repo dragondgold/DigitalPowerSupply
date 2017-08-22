@@ -1,15 +1,18 @@
 % Parametros calculados del PID
-Kp = 0.9139
-Ki = 1488
-Kd = 0
+Kp = 5
+Ki = 6000
+Kd = 5e-6
 
 % Frecuencia de muestreo del ADC del PIC
-Fs = 150e3    % 150 KSPS
+Fs = 150.15e3    % 150.15 KSPS
 
 % Creamos PID
-G_discrete = pid(Kp,Ki,Kd,0,1/Fs);
+G_discrete = pid(Kp,Ki,Kd,'Ts',1/Fs,'IFormula','Trapezoidal','DFormula','BackwardEuler')
 
-% Discretizamos el sistema y el PID
+% Discretizamos el sistema
+[a,b,c,d] = linmod('SimulinkPID');
+sys = ss(a,b,c,d);
+tf(sys)
 H_discrete = c2d(H, 1/Fs, 'zoh')
 
 % Creamos el sistema de lazo cerrado siendo G la planta

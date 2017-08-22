@@ -14,9 +14,6 @@
 #define GET_BUCK_CURRENT                3
 #define GET_BUCK_POWER                  4
 
-#define SET_BUCK_KP                     5
-#define SET_BUCK_KI                     7
-
 #define DISABLE_BUCK_PID                8
 #define ENABLE_BUCK_PID                 9
 
@@ -37,8 +34,6 @@
 #define GET_STATUS                      21
 #define GET_BUCK_SETPOINT               22
 #define GET_ALL_STRING                  23
-#define GET_BUCK_KP                     25
-#define GET_BUCK_KI                     26
 
 #define SHUTDOWN                        24
 

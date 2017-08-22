@@ -7,6 +7,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
+#include "pid.h"
 
 static char buffer[100] = {0};
 
@@ -16,6 +18,7 @@ extern PowerSupplyStatus aux5VStatus;
 extern PowerSupplyStatus aux3V3Status;
 
 static float v;
+static double d;
 static uint16_t a;
 static int16_t status;
 
@@ -92,6 +95,7 @@ int16_t _readStringWithTimeout(uint16_t timeout) {
 float getBuckVoltage() {
     uint16_t matched = getMatchedADCValue(buckStatus.outputVoltage, BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS)) / (float)BUCK_V_FEEDBACK_FACTOR;
+    //return buckStatus.outputVoltage;
 }
 
 /**
@@ -99,6 +103,7 @@ float getBuckVoltage() {
  * @return Corriente del buck en amperes
  */
 float getBuckCurrent() {
+    //return buckStatus.PID.controlReference;
     return ((float)getMatchedCurrentADCValue(buckStatus.current)*(ADC_VREF/(float)BUCK_CURRENT_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
 }
 
@@ -126,6 +131,7 @@ float getBuckCurrentLimit() {
 float get5VVoltage() {
     uint16_t matched = getMatchedADCValue(aux5VStatus.outputVoltage, AUX_5V_VOLTAGE_OFFSET, AUX_5V_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_V_FEEDBACK_FACTOR;
+    //return aux5VStatus.outputVoltage;
 }
 
 /**
@@ -159,6 +165,7 @@ float get5VCurrentLimit() {
 float get3V3Voltage() {
     uint16_t matched = getMatchedADCValue(aux3V3Status.outputVoltage, AUX_3V3_VOLTAGE_OFFSET, AUX_3V3_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_V_FEEDBACK_FACTOR;
+    //return aux3V3Status.outputVoltage;
 }
 
 /**
@@ -198,8 +205,8 @@ void _decodeCommand(uint16_t command){
             WriteUART1(ACK);
             status = _readStringWithTimeout(TIMEOUT);
             if(status == 0) {
-                double v = atof(buffer);
-                setBuckVoltage((uint16_t)(v*1000.0));
+                d = atof(buffer);
+                setBuckVoltage((uint16_t)(d*1000.0));
             }
             break;
             
@@ -233,31 +240,7 @@ void _decodeCommand(uint16_t command){
             
         case ENABLE_BUCK_PID:
             WriteUART1(ACK);
-            buckStatus.PID.integralTerm = 0;
-            buckStatus.enablePID = 1;
-            break;
-            
-        case SET_BUCK_KP:
-            WriteUART1(ACK);
-            buckStatus.enablePID = 0;
-            status = _readStringWithTimeout(TIMEOUT);
-            if(status == 0) {
-                double kp = atof(buffer);
-                buckStatus.PID.kp = kp;
-            }
-            buckStatus.PID.integralTerm = 0;
-            buckStatus.enablePID = 1;
-            break;
-            
-        case SET_BUCK_KI:
-            WriteUART1(ACK);
-            buckStatus.enablePID = 0;
-            status = _readStringWithTimeout(TIMEOUT);
-            if(status == 0) {
-                double ki = atof(buffer);
-                buckStatus.PID.ki = ki;
-            }
-            buckStatus.PID.integralTerm = 0;
+            mPIDInit(&buckStatus.PID);
             buckStatus.enablePID = 1;
             break;
             
@@ -373,7 +356,7 @@ void _decodeCommand(uint16_t command){
             
         case GET_BUCK_SETPOINT:
             WriteUART1(ACK);
-            v = ((float)buckStatus.PID.setpoint)*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS);
+            v = ((float)buckStatus.PID.controlReference)*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS);
             sprintf(buffer, "%.2f", v/BUCK_V_FEEDBACK_FACTOR);
             putsUART1((unsigned int *)buffer);
             WriteUART1('\0');
@@ -383,18 +366,6 @@ void _decodeCommand(uint16_t command){
             WriteUART1(ACK);
             _constructDataString(buffer);
             putsUART1((unsigned int *)buffer);
-            break;
-                    
-        case GET_BUCK_KP:
-            sprintf(buffer, "%d", buckStatus.PID.kp);
-            putsUART1((unsigned int *)buffer);
-            WriteUART1('\0');
-            break;
-            
-        case GET_BUCK_KI:
-            sprintf(buffer, "%d", buckStatus.PID.ki);
-            putsUART1((unsigned int *)buffer);
-            WriteUART1('\0');
             break;
         
         default:

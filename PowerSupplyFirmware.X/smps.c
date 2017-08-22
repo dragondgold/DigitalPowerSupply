@@ -2,7 +2,6 @@
 #include "definitions.h"
 #include <xc.h>
 #include <libpic30.h>
-#include <dsp.h>
 #include <pps.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -10,8 +9,8 @@
 #include <uart.h>
 #include "pid.h"
 
-static volatile uint16_t buffer[2048] = {0};
-static volatile uint16_t counter = 0;
+volatile static int16_t abcCoefficient[3]__attribute__((space(xmemory)));
+volatile static int16_t errorHistory[3]__attribute__((space(ymemory)));
 
 // Estados de las salidas
 volatile PowerSupplyStatus buckStatus;
@@ -43,34 +42,21 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN0Interrupt(void) {
  * Debido a que la resolución en corriente es mucho mayor y suficiente usamos
  *  el oversampling para el muestreo de tensión únicamente.
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
-    register int16_t output asm("w0");
-    
+void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) { 
+    LATBbits.LATB9 = 1;
     buckStatus.PID.measuredOutput = BUCK_VOLTAGE_ADC_BUFFER;
     buckStatus.outputVoltage = buckStatus.PID.measuredOutput;
-
-    //if(counter < 2048) {
-    //    buffer[counter++] = BUCK_VOLTAGE_ADC_BUFFER;
-    //}
     
-    if(buckStatus.enablePID) {
-        output = myPI(&buckStatus.PID);
-
-        if(output > BUCK_MAX_DUTY_CYCLE){
-            output = BUCK_MAX_DUTY_CYCLE;
-        }
-        else if(output < BUCK_MIN_DUTY_CYCLE) {
-            output = BUCK_MIN_DUTY_CYCLE;
-        }
-        setBuckDuty(output);
-    }
-
+    mPID(&buckStatus.PID);
+    setBuckDuty(buckStatus.PID.controlOutput);
+    
     // Guardamos los valores de potencia instantáneos
     if(buckStatus.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
         buckStatus.powerValues[buckStatus.currentPowerSample++] = __builtin_muluu(buckStatus.current, buckStatus.outputVoltage);
     }
     
     setChannelsStep2();
+    LATBbits.LATB9 = 0;
     IFS11bits.ADFLTR0IF = 0;
 }
 
@@ -165,13 +151,19 @@ void smpsInit(void){
     PWR_GOOD_TRIS = 0;
     PWR_GOOD_LAT = 0;
     
+    // Inicialización del PID
+    buckStatus.PID.abcCoefficients = abcCoefficient;
+    buckStatus.PID.errorHistory = errorHistory;
+    buckStatus.PID.abcCoefficients[0] = BUCK_PIC_A_COEFFICIENT;
+    buckStatus.PID.abcCoefficients[1] = BUCK_PIC_B_COEFFICIENT;
+    buckStatus.PID.abcCoefficients[2] = BUCK_PIC_C_COEFFICIENT;
+    buckStatus.PID.coeffFactor = 4; // 2^4 = 16
+    buckStatus.PID.upperLimit = BUCK_MAX_DUTY_CYCLE;
+    buckStatus.PID.lowerLimit = BUCK_MIN_DUTY_CYCLE;
+    
+    mPIDInit(&buckStatus.PID);
+    
     // Inicialización de las estructuras de cada salida
-    buckStatus.PID.integralTerm = 0;
-    buckStatus.PID.kp = BUCK_KP;
-    buckStatus.PID.ki = BUCK_KI;
-    buckStatus.PID.n = 1;
-    buckStatus.PID.measuredOutput = 0;
-    buckStatus.PID.setpoint = 0;
     buckStatus.duty = BUCK_INITIAL_DUTY_CYCLE;
     buckStatus.phaseReg = BUCK_PHASE;
     buckStatus.pTrigger = 1568;
@@ -222,6 +214,10 @@ void smpsInit(void){
     IOCON1bits.OVRENH = 1;
     IOCON1bits.OVRENL = 1;
     
+    TRISBbits.TRISB9 = 0;
+    LATBbits.LATB9 = 0;
+    setBuckVoltage(6000);
+    
     _initADC();
     _initComparators();
     _initBuckPWM(&buckStatus);
@@ -242,7 +238,6 @@ void smpsInit(void){
     IOCON1bits.PENH = 1;
     IOCON1bits.PENL = 1;
     
-    setBuckVoltage(6000); 
     auxEnable();
     
     ON_OFF_5V_TRIS = 0;
@@ -298,13 +293,13 @@ void smpsTasks(void) {
 void buckEnable() {
     uint16_t prevFaultMode = 0;
     
-    buckStatus.PID.integralTerm = 0;
+    mPIDInit(&buckStatus.PID);
     buckStatus.currentLimitFired = 0;
     buckStatus.enablePID = 1;
     buckStatus.enabled = 1;
     FAULT_LAT = 1;
     
-    // Pocedimiento para borrar condicion FAULT
+    // Procedimiento para borrar condición FAULT
     IOCON1bits.OVRENH = 1;      // Activamos override (salidas a 0)
     IOCON1bits.OVRENL = 1;
     prevFaultMode = FCLCON1bits.FLTMOD;
@@ -359,7 +354,7 @@ void setBuckVoltage(uint16_t voltage) {
     }
     
     float v = (float)voltage * (float)BUCK_V_FEEDBACK_FACTOR;
-    buckStatus.PID.setpoint = getInverseMatchedADCValue((uint16_t)(v*((float)BUCK_VOLTAGE_ADC_COUNTS/(ADC_VREF*1000.0))),
+    buckStatus.PID.controlReference = getInverseMatchedADCValue((uint16_t)(v*((float)BUCK_VOLTAGE_ADC_COUNTS/(ADC_VREF*1000.0))),
             BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
 }
 
@@ -499,7 +494,7 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     TRGCON1bits.DTM = 0;        // Generamos triggers principales y secundarios (no combinados)
     TRGCON1bits.TRGSTRT = 0;    // Esperamos 0 ciclos de PWM al iniciar el modulo antes
                                 //  de comenzar a contar los ciclos para el trigger
-    TRGCON1bits.TRGDIV = 2;     // Cada 3 periodos del PWM se genera un evento de
+    TRGCON1bits.TRGDIV = 0;     // Cada 1 periodo del PWM se genera un evento de
                                 //  trigger
 
     IOCON1bits.PENH = 0;        // Pin PWMH deshabilitado
@@ -713,7 +708,7 @@ void _initADC(void) {
     // Configuración de oversampling
     ADFL0CONbits.FLEN = 0;
     ADFL0CONbits.MODE = 0b00;       // Modo oversampling
-    ADFL0CONbits.OVRSAM = 0b001;    // 16x oversampling (2 bit adicionales)
+    ADFL0CONbits.OVRSAM = 0b000;    // 4x oversampling (1 bit adicional)
     ADFL0CONbits.FLCHSEL = 1;       // AN1 para el filtro digital 0
     ADFL0CONbits.IE = 1;            // Interrupción habilitada
     ADFL0CONbits.FLEN = 1;
@@ -727,12 +722,12 @@ void _initADC(void) {
     // AN0 (buck current)
     IFS6bits.ADCAN0IF = 0;
     IEC6bits.ADCAN0IE = 1;
-    IPC27bits.ADCAN0IP = 5;
+    IPC27bits.ADCAN0IP = 6;
     
     // AN1 (buck voltage)
     IFS6bits.ADCAN1IF = 0;
     IEC6bits.ADCAN1IE = 0;
-    IPC27bits.ADCAN1IP = 6;         // Este canal trabaja a través del filtro únicamente
+    IPC27bits.ADCAN1IP = 5;         // Este canal trabaja a través del filtro únicamente
     
     // AN2 (5v current)
     IFS7bits.ADCAN2IF = 0;

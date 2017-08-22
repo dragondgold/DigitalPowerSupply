@@ -19,10 +19,10 @@
                    projectFiles="true">
       <itemPath>main.c</itemPath>
       <itemPath>smps.c</itemPath>
-      <itemPath>myPI.s</itemPath>
       <itemPath>command-parser.c</itemPath>
       <itemPath>debug-uart.c</itemPath>
       <itemPath>traps.c</itemPath>
+      <itemPath>myPID.s</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -104,7 +104,7 @@
         <property key="oXC16gcc-sfr-warn" value="false"/>
         <property key="oXC16gcc-smar-io-lvl" value="1"/>
         <property key="oXC16gcc-smart-io-fmt" value=""/>
-        <property key="optimization-level" value="0"/>
+        <property key="optimization-level" value="1"/>
         <property key="post-instruction-scheduling" value="default"/>
         <property key="pre-instruction-scheduling" value="default"/>
         <property key="preprocessor-macros" value=""/>

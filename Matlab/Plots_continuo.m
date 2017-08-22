@@ -1,7 +1,7 @@
 % Parametros calculados del PID
-Kp = 0.9139
-Ki = 1488
-Kd = 0
+Kp = 1.7
+Ki = 18000
+Kd = 5e-6
 
 % Creamos PID
 G = pid(Kp,Ki,Kd)

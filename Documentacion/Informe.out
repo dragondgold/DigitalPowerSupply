@@ -13,21 +13,23 @@
 \BOOKMARK [1][-]{section.3.3}{Circuito equivalente de conmutaci\363n linealizado}{chapter.3}% 13
 \BOOKMARK [1][-]{section.3.4}{Determinaci\363n de la funci\363n de transferencia H\(S\)}{chapter.3}% 14
 \BOOKMARK [1][-]{section.3.5}{C\341lculo de los par\341metros PID en MATLAB\256}{chapter.3}% 15
-\BOOKMARK [2][-]{subsection.3.5.1}{An\341lisis en el plano continuo s}{section.3.5}% 16
-\BOOKMARK [2][-]{subsection.3.5.2}{An\341lisis en el plano discreto z}{section.3.5}% 17
-\BOOKMARK [0][-]{chapter.4}{Circuito de control}{}% 18
-\BOOKMARK [1][-]{section.4.1}{Introducci\363n}{chapter.4}% 19
-\BOOKMARK [1][-]{section.4.2}{Microcontrolador DSP}{chapter.4}% 20
-\BOOKMARK [1][-]{section.4.3}{Metodolog\355a de muestreo}{chapter.4}% 21
-\BOOKMARK [1][-]{section.4.4}{Leading-Edge Blanking}{chapter.4}% 22
-\BOOKMARK [1][-]{section.4.5}{Acondicionamiento de las tensiones de salida}{chapter.4}% 23
-\BOOKMARK [1][-]{section.4.6}{Acondicionamiento de las corrientes de salida}{chapter.4}% 24
-\BOOKMARK [0][-]{chapter.5}{Software}{}% 25
-\BOOKMARK [1][-]{section.5.1}{PID}{chapter.5}% 26
-\BOOKMARK [0][-]{chapter.6}{Mediciones}{}% 27
-\BOOKMARK [1][-]{section.6.1}{Regulaci\363n de linea}{chapter.6}% 28
-\BOOKMARK [1][-]{section.6.2}{Regulaci\363n de carga}{chapter.6}% 29
-\BOOKMARK [1][-]{section.6.3}{Ripple}{chapter.6}% 30
-\BOOKMARK [1][-]{section.6.4}{Tiempo de respuesta}{chapter.6}% 31
-\BOOKMARK [0][-]{chapter.7}{Conclusi\363n}{}% 32
-\BOOKMARK [0][-]{chapter.8}{Bibliograf\355a y Contacto}{}% 33
+\BOOKMARK [1][-]{section.3.6}{An\341lisis de respuesta del sistema}{chapter.3}% 16
+\BOOKMARK [2][-]{subsection.3.6.1}{Respuesta transitoria}{section.3.6}% 17
+\BOOKMARK [2][-]{subsection.3.6.2}{Respuesta en frecuencia}{section.3.6}% 18
+\BOOKMARK [2][-]{subsection.3.6.3}{Diagrama de polos y ceros}{section.3.6}% 19
+\BOOKMARK [0][-]{chapter.4}{Circuito de control}{}% 20
+\BOOKMARK [1][-]{section.4.1}{Introducci\363n}{chapter.4}% 21
+\BOOKMARK [1][-]{section.4.2}{Microcontrolador DSP}{chapter.4}% 22
+\BOOKMARK [1][-]{section.4.3}{Metodolog\355a de muestreo}{chapter.4}% 23
+\BOOKMARK [1][-]{section.4.4}{Leading-Edge Blanking}{chapter.4}% 24
+\BOOKMARK [1][-]{section.4.5}{Acondicionamiento de las tensiones de salida}{chapter.4}% 25
+\BOOKMARK [1][-]{section.4.6}{Acondicionamiento de las corrientes de salida}{chapter.4}% 26
+\BOOKMARK [0][-]{chapter.5}{Software}{}% 27
+\BOOKMARK [1][-]{section.5.1}{PID}{chapter.5}% 28
+\BOOKMARK [0][-]{chapter.6}{Mediciones}{}% 29
+\BOOKMARK [1][-]{section.6.1}{Regulaci\363n de linea}{chapter.6}% 30
+\BOOKMARK [1][-]{section.6.2}{Regulaci\363n de carga}{chapter.6}% 31
+\BOOKMARK [1][-]{section.6.3}{Ripple}{chapter.6}% 32
+\BOOKMARK [1][-]{section.6.4}{Tiempo de respuesta}{chapter.6}% 33
+\BOOKMARK [0][-]{chapter.7}{Conclusi\363n}{}% 34
+\BOOKMARK [0][-]{chapter.8}{Bibliograf\355a y Contacto}{}% 35

@@ -61,7 +61,7 @@ typedef struct {
     uint16_t    outputVoltage;      // Tensión de salida en valor del ADC
     uint32_t    averagePower;       // Potencia media en valor del ADC
 
-    myPIData    PID;                    // Controlador PID
+    _PIDData    PID;                    // Controlador PID
     
     uint16_t    enablePID:1;            // Indica si el PID está habilitado
     uint16_t    currentLimitFired:1;    // Indica si se excedió el limite de corriente

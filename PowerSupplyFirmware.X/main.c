@@ -69,7 +69,7 @@
 #include "pid.h"
 #include "debug-uart.h"
 
-int main(int argc, char** argv) {   
+int main(int argc, char** argv) { 
     // FRCat 7.48 MHz (+1.5% de la frecuencia central, 4*0.375%)
     //OSCTUNbits.TUN = 4;
 

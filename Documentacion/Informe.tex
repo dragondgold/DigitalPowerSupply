@@ -496,119 +496,71 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		\lstinputlisting{../Matlab/PID.m}
 	\end{minipage}
 	
-	Usamos entonces la herramienta \textit{PID Tuner} de MATLAB\textregistered, seleccionamos un control del tipo PID y ajustamos los controles \textit{Tiempo de respuesta} y \textit{Respuesta a transitorios} hasta obtener una curva que nos convenza, en nuestro caso se priorizó la eliminación de sobre-elongaciones antes que el tiempo de establecimiento del sistema como se muestra en la figura \ref{buck:settling_time}
-	
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_step_response} 
-		\caption{Respuesta transitoria de lazo cerrado}
-		\label{buck:settling_time}
-	\end{sidewaysfigure}
-
-	\newpage
-	Ya habiendo entonces obtenido los valores de Kp, Ki y Kd podemos obtener las distintas repuestas de nuestro sistema tanto en el plano continuo como en el discreto.
-
-	\subsection{Análisis en el plano continuo s}
-	
-	El siguiente programa de MATLAB\textregistered \ fue usado para los análisis de respuesta transitoria, estado estable, Bode, Nyquist y diagrama de polos y ceros teniendo ya los valores de Kp, Ki y Kd. Este programa utiliza además la función de la planta $G(s)$ del programa anterior:
-	
-	\lstinputlisting{../Matlab/Plots_continuo.m}
-	
-	\subsubsection{Respuesta transitoria}
-	
-	En la figura \ref{buck:settling_time} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que el tiempo de crecimiento es de $22 \mu s$ y el tiempo de establecimiento de $65 \mu s$ con una sobre-elongación del 1.57\%. 
-	
-	El margen de fase es de 88 grados lo que significa que podemos introducir un defasaje de hasta dicho ángulo en el lazo de control sin perder la estabilidad del sistema.
-	
-	\subsubsection{Estado Estacionario}
-	
-	En la figura \ref{buck:steady_state} podemos observar que no tenemos error de estado estable, es decir, el controlador alcanza el setpoint y no presenta ningún comportamiento oscilatorio.
-	
-	\subsubsection{Respuesta en frecuencia}
-
-	En la figura \ref{buck:bode} se puede apreciar como el ancho de banda de nuestro sistema se encuentra alrededor de los 15 kHz donde tenemos una caída de -3dB.
-	
-	El margen de fase es de -180 grados lo que indica que podemos agregar hasta 180 grados de fase a nuestro sistema sin volverlo inestable.
-	
-	\subsubsection{Diagrama de polos y ceros}
-
-	En la figura \ref{buck:polos_ceros} se presenta el diagrama de polos y ceros. Debido a que las distancias entre los distintos polos y ceros son variadas y no están concentrados en un punto resulta quizás más útil observar el resultado proveniente de la función \textit{pzmap()} de MATLAB\textregistered donde muestra los valores numéricos de los distintos polos y ceros:
-	
-	\begin{itemize}
-		\item Polos:
-			\subitem \num{-89368}
-			\subitem \num{-6545}
-			\subitem \num{-1569}
-		\item Ceros:
-			\subitem \num{-6079}
-			\subitem \num{-1628}
-	\end{itemize}
-	
-	Podemos ver que tanto los polos como ceros se encuentran en el eje real y del lado negativo por lo que el sistema es estable y dado a que los polos se encuentran todos distribuidos a lo largo del eje horizontal el sistema es sobre-amortiguado.
-	
-	%\subsubsection{Diagrama de Nyquist}
-	%Figura \ref{buck:nyquist} % TODO: Hacer analisis de Nyquist
-
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_steady_state} 
-		\caption{Estado estacionario}
-		\label{buck:steady_state}
-	\end{sidewaysfigure}
-	
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_bode} 
-		\caption{Respuesta en frecuencia - Diagrama de Bode}
-		\label{buck:bode}
-	\end{sidewaysfigure}
-	
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_polos_ceros} 
-		\caption{Diagrama de polos y ceros}
-		\label{buck:polos_ceros}
-	\end{sidewaysfigure}
-
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_nyquist} 
-		\caption{Diagrama de Nyquist}
-		\label{buck:nyquist}
-	\end{sidewaysfigure}
-
-	\newpage
-	\subsection{Análisis en el plano discreto z}
-
-	Para el análisis en el plano discreto, se discretizó el sistema con la frecuencia de muestreo de 178kHz. El siguiente programa de MATLAB\textregistered \ fue el utilizado para el análisis:
-	
-	\lstinputlisting{../Matlab/Plots_discreto.m}
-	
-	En nuestro caso las observaciones del sistema tienen más sentido sobre el plano z ya que nuestro sistema es discreto y no continuo, debido a que se muestrea la señal de realimentación. 
-	
-	\subsubsection{Respuesta transitoria}
-	
-	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Podemos ver que la respuesta es muy similar o idéntica a la obtenida en el plano continuo. Esto es un buen indicador ya que significa que la frecuencia de muestreo es lo suficientemente alta como para controlar el sistema de manera adecuada. Por ejemplo, si utilizamos una frecuencia baja como 50 kHz la respuesta que tenemos es la siguiente:
+	Teniendo entonces la función de transferencia de la planta vamos a modelar el sistema completo en Simulink para obtener los valores de Kp, Ki, Kd y la respuesta del sistema en lazo cerrado. Se presenta en la siguiente imagen el sistema que se simuló con Simulink:
 	
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=0.9\textwidth,height=\textheight,keepaspectratio]{buck_step_low_freq}
-		\caption{Respuesta transitoria con baja frecuencia de muestreo}
+		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{Simulink} 
+		\caption{Respuesta transitoria de lazo cerrado}
+	\end{figure}
+	
+	La ventaja de la modelización del sistema en Simulink es que pueden considerarse todas las variables como el efecto del tiempo de muestreo y los valores máximos y mínimos que pueden tomar las variables de entrada/salida.
+
+	Obtenemos entonces los valores de Kp, Ki y Kd utilizando el asistente de MATLAB\textregistered \ para realizar el tuning del PID y ajustando luego los valores manualmente para obtener los resultados deseados en la simulación. Ya habiendo entonces obtenido los valores de Kp, Ki y Kd podemos obtener la repuesta de nuestro sistema discreto:
+
+	\newpage
+	\section{Análisis de respuesta del sistema}
+	
+	La siguiente imagen muestra la configuración del bloque PID. Es importante configurar de manera correcta este bloque ya que de su función de transferencia se determinará el algoritmo a ser usado luego en el DSP para realizar el control.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.9\textwidth,height=\textheight,keepaspectratio]{Simulink_PID}
+		\caption{Configuración del bloque PID}
 	\end{figure}
 
-	En donde a pesar que el sistema llega a su estado final existe una sobre-elongación sumamente elevada.
+	Los parámetros más importantes aquí son el tiempo de muestreo que en nuestro caso es de $6.66 \mu s$ y la función de transferencia del bloque dada por:
 	
-	\subsubsection{Estado Estacionario}
+	\begin{equation}
+		T_s = P + I \times \frac{T_s}{2} \times \frac{z+1}{z-1} + D \times \frac{1}{T_s} \times \frac{z-1}{z}
+		\label{pid:algorithm}
+	\end{equation}
 	
-	En la figura \ref{buck:step_discrete} vemos que el sistema se comporta de la misma manera que lo hacía en el plano continuo s.
+	Que traducido a la implementación en un microcontrolador puede escribirse como:
 	
-	\subsubsection{Respuesta en frecuencia}
+	\begin{equation}
+		u[k] = u[k-1] + a \times e[k] + b \times e[k-1] + c \times e[k-2]
+	\end{equation}
 	
-	Observando la figura \ref{buck:bode_discrete} vemos como el ancho de banda del sistema subió a 25kHz. El margen de fase se mantuvo en -180 grados y el de ganancia es de 7.06 dB que es la ganancia máxima que podemos agregar al lazo sin volverlo inestable.
+	En donde $u$ es la salida del controlador, $k$ es la muestra actual, $e$ es el error y los coeficientes $a$, $b$ y $c$ están dados por:
 	
-	\subsubsection{Diagrama de polos y ceros}
+	\begin{equation}
+		a = K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s}
+	\end{equation}
 	
-	En la figura \ref{buck:polos_ceros_discrete} vemos los polos y ceros ubicado del lado izquierdo del eje vertical por lo que el sistema es estable .
+	\begin{equation}
+		b = -K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s}
+	\end{equation}
+	
+	\begin{equation}
+		c = \frac{K_d}{T_s}
+	\end{equation}
+	
+	Que como se verá luego, puede ejecutarse muy rápidamente en un DSP con las instrucciones MAC que proporciona.
+	
+	Con estas configuraciones se realiza el análisis del sistema con la herramienta \textit{Linear Analysis Tool} de Simulink que se encuentra en Analysis \textrightarrow \ Control Design \textrightarrow \ Linear Analysis. Los valores para las constantes del PID obtenidas son $K_p = 5$, $K_i = 6000$ y $K_d = \num{5e-6}$.
+	
+	\subsection{Respuesta transitoria}
+	
+	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Se puede observar una sobre-elongación del 6.78\%. Se optó por esto a tener un error de estado estacionario que en este caso es nulo, reducir la constante Ki reduce la sobre-elongación pero aumenta el error de estado estacionario rápidamente.
+	
+	\subsection{Respuesta en frecuencia}
+	
+	Observando la figura \ref{buck:bode_discrete} vemos como el ancho de banda del sistema es de 55kHz. El margen de ganancia indica que podemos agregar hasta 15.4db de ganancia al lazo sin desestabilizar el sistema.
+	
+	\subsection{Diagrama de polos y ceros}
+	
+	En la figura \ref{buck:polos_ceros_discrete} se observa que todos los polos y ceros se encuentran dentro del radio unitario y en un sistema discreto esto significa que el mismo es estable.
 	
 	\begin{sidewaysfigure}
 		\centering
@@ -629,13 +581,6 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_polos_ceros_discrete}
 		\caption{Diagrama de polos y ceros - Sistema Discreto}
 		\label{buck:polos_ceros_discrete}
-	\end{sidewaysfigure}
-	
-	\begin{sidewaysfigure}
-		\centering
-		\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{buck_nyquist_discrete} 
-		\caption{Diagrama de Nyquist - Sistema Discreto}
-		\label{buck:nyquist_discrete}
 	\end{sidewaysfigure}
 	
 \chapter{Circuito de control}
@@ -667,7 +612,7 @@ El microcontrolador elegido es un dsPIC33EP64GS502 de la empresa Microchip\textr
 	\item Módulo PWM de alta velocidad que permite un control preciso del Duty Cycle respecto a los convencionales
 	\item Control de dead-time o tiempo muerto
 	\item ADC de alta velocidad de 12 bits capaz de capturar y convertir hasta 4 entradas analógicas de forma simultánea lo que permite muestrear los niveles de tensión y corriente en el mismo instante para tener un cálculo certero de la potencia
-	\item Núcleo DSP con instrucciones MAC (multiply-accumulate) de ciclo único lo que permite la ejecución de algoritmos PID de forma rápida
+	\item Núcleo DSP con instrucciones MAC (multiply-accumulate) de ciclo único lo que permite la ejecución de algoritmos como PID de forma rápida
 \end{itemize} 
 
 Como se explica arriba, este microcontrolador tiene la posibilidad de generar tiempos muertos o Dead-Time en las señales PWM. Como recordamos, el Buck implementado es del tipo sincrónico por lo que mientras un MOSFET se enciende el otro permanece apagado. Debido a que el tiempo de transición entre encendido y apagado no es instantáneo se introduce un tiempo muerto entre las conmutaciones en donde ambos MOSFET se encuentran apagados. En la imagen \ref{deadtime} se ilustra el comportamiento descrito.
@@ -683,9 +628,9 @@ Como se explica arriba, este microcontrolador tiene la posibilidad de generar ti
 
 El DSP cuenta con 4 cores ADC que permiten convertir de forma simultánea hasta 4 entradas analógicas. Además, incorpora un filtro digital el cual es capaz de realizar oversampling de forma automática. 
 
-Se aprovechan estas funciones para muestrear de forma simultánea la tensión y corriente del buck con un oversampling de 16x lo que añade 2 bits de resolución a los 12 bits del ADC. Al mismo tiempo se muestrea la corriente y tensión de la línea de 5V. Una vez terminadas todas estas conversiones se pasa a la línea de 3.3V donde se mide también de manera simultánea la tensión y la corriente.
+Se aprovechan estas funciones para muestrear de forma simultánea la tensión y corriente del buck con un oversampling de 4x en la tensión lo que añade 1 bit de resolución a los 12 bits del ADC. Al mismo tiempo se muestrea la corriente y tensión de la línea de 5V. Una vez terminadas todas estas conversiones se pasa a la línea de 3.3V donde se mide también de manera simultánea la tensión y la corriente.
 
-Todo este ciclo se repite cada $6.67 \mu s$ que equivalen a 3 períodos del PWM.
+Todo este ciclo se repite cada $6.66 \mu s$ que equivalen a 2 períodos del PWM.
 
 La corriente no solo se mide a través de la lectura de los ADC sino que también es continuamente comparada con una tensión de referencia en los comparadores internos del DSP lo que permite reaccionar de manera instantánea a cualquier sobre-corriente sin necesidad de esperar al muestreo y conversión de las entradas analógicas.
 
@@ -718,7 +663,7 @@ La resolución del ADC del DSP es de 12 bits e implementamos la técnica de over
 La resolución en tensión del ADC puede ser calculada como:
 
 \begin{equation}
-	Res_{buck} = 3.3V / 2^{14} = 201.42 \mu V
+	Res_{buck} = 3.3V / 2^{13} = 402.83 \mu V
 \end{equation}
 \begin{equation}
 	Res_{aux} = 3.3V / 2^{12} = 805.65 \mu V
@@ -733,17 +678,17 @@ Vamos a calcular el factor de atenuación de cada salida que viene dado por el v
 Con la resolución del ADC y el factor de atenuación podemos calcular entonces la resolución que tenemos al medir la tensión de salida del Buck, en este caso:
 
 \begin{equation}
-	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{201.42e-6} \mu V}{0.109} = 1.85 mV
+	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{402.83e-6} \mu V}{0.109} = 3.70 mV
 \end{equation}
 
-Como la tensión de referencia tiene una variación de $\pm0.08\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm0.08\%$ que se traduce en una variación de $\pm1.48 \mu V$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
+Como la tensión de referencia tiene una variación de $\pm0.08\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm0.08\%$ que se traduce en una variación de $\pm2.96 \mu V$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
 		Parámetro & Factor de atenuación Vo/Vi & Resolución & Error 
 		\\ \midrule
-		$V_{buck}$ & 0.109 & 1.85mV & $\pm1.48 \mu V$ \\
+		$V_{buck}$ & 0.109 & 3.70mV & $\pm1.48 \mu V$ \\
 		$V_{5V}$ & 0.637 & 1.25mV & $\pm1 \mu V$ \\
 		$V_{3.3V}$ & 0.954 & 0.83mV & $\pm0.66 \mu V$ \\
 		\bottomrule
@@ -764,7 +709,7 @@ Para medir la corriente de salida se toma la señal diferencial proveniente de l
 Utilizando la resolución del ADC obtenida en la sección anterior podemos calcular la resolución de corriente que tenemos en cada salida. Como se tiene una ganancia de 20, la resolución de tensión del ADC pasa a ser de:
 
 \begin{equation}
-	Res_{buck} = 201.42 \mu V / 20 = 10\mu V
+	Res_{buck} = 402.83 \mu V / 20 = 20.14\mu V
 \end{equation}
 \begin{equation}
 	Res_{aux} = 805.65 \mu V / 20 = 40.28 \mu V
@@ -773,7 +718,7 @@ Utilizando la resolución del ADC obtenida en la sección anterior podemos calcu
 Tomemos como ejemplo la salida del buck cuya resistencia de sensado es de $50m\Omega$:
 
 \begin{equation}
-	Resolucion \ Corriente = Res / 50m\Omega = 200 \mu A
+	Resolucion \ Corriente = Res / 50m\Omega = 402.8 \mu A
 \end{equation}
 
 Aplicando el mismo proceso a todas las demás salidas:
@@ -783,7 +728,7 @@ Aplicando el mismo proceso a todas las demás salidas:
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
 		Parámetro & Resistencia de sensado & Resolución & Error 
 		\\ \midrule
-		$I_{buck}$ & $50m\Omega$ & $200 \mu A$ & $\pm 160nA$ \\
+		$I_{buck}$ & $50m\Omega$ & $402.8 \mu A$ & $\pm 322.24nA$ \\
 		$I_{5V}$ & $100m\Omega$ & $408.2 \mu A$ & $\pm 326nA$ \\
 		$I_{3.3V}$ & $150m\Omega$ & $272.13 \mu A$ & $\pm 218nA$ \\
 		\bottomrule
@@ -799,26 +744,53 @@ Donde el error de la medición como en el caso anterior está dado por la variac
 
 El programa del DSP fue escrito en C utilizando el compilador XC16 v1.31 de Microchip\textregistered \ excepto por el algoritmo del PID que fue diseñado e implementado en lenguaje ensamblador. 
 
-Debido a que el término diferencial de nuestro PID es 0 se trata en realidad de un controlador PI el cual se implementó de la siguiente manera aprovechando los acumuladores con saturación de 40 bits del DSP y las multiplicaciones de un solo ciclo:
+En el anexo se encuentra el programa que corresponde a la ejecución del algoritmo PID. Se aprovechan las instrucciones MAC (que permiten multiplicar y acumular en un solo ciclo de instrucción) y los dos acumuladores de 40 bits de los que dispone el DSP. 
 
-\lstinputlisting{../PowerSupplyFirmware.X/myPI.s}
+%\begin{landscape}
+%	\lstinputlisting{../PowerSupplyFirmware.X/myPID.s}
+%\end{landscape}
 
-Esta rutina se ejecuta cada $6.67\mu s$ por lo que es importante que se ejecute rápidamente, para ello el algoritmo solo utiliza números enteros de 16 bit por lo que deben convertirse todos los valores en coma flotante de las constantes del PID a enteros para ser utilizados.
-
-Como se vio durante el desarrollo de la función de transferencia del convertidor Buck la relación es $\dfrac{\hat{v_o}(s)}{\hat{d}(s)}$ siendo $\hat{v_o}(s)$ la tensión de salida del Buck que varía entre 0 y 30V, si convertimos estos valores de tensión a las lecturas correspondientes del ADC tendríamos una variación entre 0 y 16384 ($2^{14}$) por lo que podríamos designar un factor de escala de la siguiente manera:
-
-\begin{equation}
-	y = 16384 / 30V = 546.13
-\end{equation}
-
-Este es el factor por el cual afectaremos a Kp y Ki. Además, Ki lo vamos a multiplicar por el período de muestreo de modo que quede previamente computado y no deba calcularse en cada ciclo que corre el PID reduciendo así el tiempo de cálculo. Entonces los valores de Kp y Ki redondeados a enteros quedan:
+Esta rutina se ejecuta cada $6.66\mu s$ por lo que es importante que se ejecute rápidamente, para ello el algoritmo solo utiliza números enteros de 16 bit por lo que deben convertirse todos los valores en coma flotante de las constantes del PID a enteros para ser utilizados. Como se describe en la ecuación \ref{pid:algorithm} se calculan las constantes $a$, $b$ y $c$ para el controlador PID usando los valores $K_p$, $K_i$ y $K_d$ obtenidos:
 
 \begin{equation}
-	Kp = 0.9139 * 546.13 = 499
+	a = K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s} = 6.215
 \end{equation}
 
 \begin{equation}
-	Ki = 1488 * 546.13 * (1/178000) = 5
+	b = -K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s} = -7.385
+\end{equation}
+
+\begin{equation}
+	c = \frac{K_d}{T_s} = 1.2
+\end{equation}
+
+Vemos que los valores obtenidos son pequeños y por lo tanto la parte decimal del número es un valor significativo. Como solo podemos utilizar valores enteros se afectará a la ecuación por un número potencia de 2. Recordemos la ecuación del PID usada en el DSP:
+
+\begin{equation}
+	u[k] = u[k-1] + a \times e[k] + b \times e[k-1] + c \times e[k-2]
+\end{equation}
+
+
+Si multiplicamos y dividimos este ecuación por un número $x$ podemos escribirla como:
+
+\begin{equation}
+	u[k] = u[k-1] + a \times x \times \frac{e[k]}{x} + b \times x \times \frac{e[k-1]}{x} + c \times x \times \frac{e[k-2]}{x}
+\end{equation}
+
+Por lo que el valor de cada constante se convierte en un valor mayor que puede representarse más precisamente como un número entero, sin embargo, debemos tener en cuenta que esto también limita el error mínimo que puede discriminar el controlador que será $x$ ya que el error es también un número entero y cualquier valor en el intervalo (0, 1) será un 0.
+
+Eligiendo $x = 16$, los valores de $a$, $b$ y $c$ quedan entonces como:
+
+\begin{equation}
+a = (K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s}) \times 16 = 99.44 = 99
+\end{equation}
+
+\begin{equation}
+b = (-K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s}) \times 16 = -118.16 = -118
+\end{equation}
+
+\begin{equation}
+c = (\frac{K_d}{T_s}) \times 16 = 19.2 = 19
 \end{equation}
 
 \chapter{Mediciones}
@@ -932,6 +904,8 @@ Algunas mejores posibles son el reemplazo del transformador de 50Hz por una fuen
 	FPGA - \url{https://www.ijirset.com/upload/december/5-Modeling\%20of\%20PID\%20controller.pdf}
 	\item Mathworks - Design a PID Controller Using Simulated I/O Data - \url{https://www.mathworks.com/help/slcontrol/examples/design-a-pid-controller-using-simulated-i-o-data.html}
 	\item Mathworks - Plotting System Responses - \url{https://www.mathworks.com/help/control/examples/plotting-system-responses.html}
+	\item Mathworks - Specify Portion of Model to Linearize - \url{https://www.mathworks.com/help/slcontrol/ug/specify-model-portion-to-linearize.html}
+	\item EEVBlog - \url{https://www.eevblog.com/forum/projects/pic-silicon-bugs-adc-offset/}
 	\item Toroids Info - \url{http://toroids.info/}
 	\item Foro diyAudio - \url{www.diyaudio.com}
 	\item Foro diySMPS - \url{www.diysmps.com}
