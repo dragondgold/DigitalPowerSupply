@@ -14,7 +14,8 @@
 
 #define ENABLE_CURRENT_PROTECTION
 #define DEBUG_INTERRUPTS
-#define INSTANTANEUS_POWER_BUFFER_SAMPLES 32
+#define INSTANTANEUS_VOLTAGE_SAMPLES        2048
+#define INSTANTANEUS_CURRENT_SAMPLES        INSTANTANEUS_VOLTAGE_SAMPLES
 
 #define setBuckDuty(duty)       PDC1 = SDC1 = duty
 #define getBuckDuty()           PDC1
@@ -67,9 +68,14 @@ typedef struct {
     uint16_t    currentLimitFired:1;    // Indica si se excedió el limite de corriente
     uint16_t    enabled:1;              // Indica si la salida está habilitada o no
     
-    // Buffer para calculo de potencia media
-    volatile uint16_t currentPowerSample;
-    volatile uint32_t powerValues[INSTANTANEUS_POWER_BUFFER_SAMPLES];
+    // Para calculo de tensión media  
+    volatile uint32_t voltageSum;
+    volatile uint16_t currentVoltageSample;
+    volatile uint16_t averageVoltage;
+    
+    volatile uint32_t currentSum;
+    volatile uint16_t currentCurrentSample;
+    volatile uint16_t averageCurrent;
 } PowerSupplyStatus;
 
 void smpsInit(void);

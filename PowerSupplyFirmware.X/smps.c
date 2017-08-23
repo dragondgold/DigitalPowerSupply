@@ -26,6 +26,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _AD1Interrupt(void) {
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN0Interrupt(void) {   
     buckStatus.current = BUCK_CURRENT_ADC_BUFFER;
+    
+    if(buckStatus.currentCurrentSample < INSTANTANEUS_CURRENT_SAMPLES) {
+        buckStatus.currentSum += buckStatus.current;
+        buckStatus.currentCurrentSample++;
+    }
+    
     IFS6bits.ADCAN0IF = 0;
 }
 
@@ -50,9 +56,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
     mPID(&buckStatus.PID);
     setBuckDuty(buckStatus.PID.controlOutput);
     
-    // Guardamos los valores de potencia instantáneos
-    if(buckStatus.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        buckStatus.powerValues[buckStatus.currentPowerSample++] = __builtin_muluu(buckStatus.current, buckStatus.outputVoltage);
+    // Guardamos los valores de tensión para luego calcular un promedio
+    if(buckStatus.currentVoltageSample < INSTANTANEUS_VOLTAGE_SAMPLES) {
+        buckStatus.voltageSum += buckStatus.outputVoltage;
+        buckStatus.currentVoltageSample++;
     }
     
     setChannelsStep2();
@@ -65,6 +72,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {   
     aux5VStatus.current = CURRENT_5V_ADC_BUFFER;
+    
+    if(aux5VStatus.currentCurrentSample < INSTANTANEUS_CURRENT_SAMPLES) {
+        aux5VStatus.currentSum += aux5VStatus.current;
+        aux5VStatus.currentCurrentSample++;
+    }
+    
     IFS7bits.ADCAN2IF = 0;
 }
 
@@ -75,9 +88,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN2Interrupt(void) {
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN3Interrupt(void) {
     aux5VStatus.outputVoltage = VOLTAGE_5V_ADC_BUFFER;
     
-    // Guardamos los valores de potencia instantáneos
-    if(aux5VStatus.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        aux5VStatus.powerValues[aux5VStatus.currentPowerSample++] = __builtin_muluu(aux5VStatus.current, aux5VStatus.outputVoltage);
+    // Guardamos los valores de tensión para luego calcular un promedio
+    if(aux5VStatus.currentVoltageSample < INSTANTANEUS_VOLTAGE_SAMPLES) {
+        aux5VStatus.voltageSum += aux5VStatus.outputVoltage;
+        aux5VStatus.currentVoltageSample++;
     }
     
     IFS7bits.ADCAN3IF = 0;
@@ -88,6 +102,12 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN3Interrupt(void) {
  */
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {    
     aux3V3Status.current = CURRENT_3V3_ADC_BUFFER;
+    
+    if(aux3V3Status.currentCurrentSample < INSTANTANEUS_CURRENT_SAMPLES) {
+        aux3V3Status.currentSum += aux3V3Status.current;
+        aux3V3Status.currentCurrentSample++;
+    }
+    
     IFS7bits.ADCAN7IF = 0;
 }
 
@@ -99,9 +119,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN7Interrupt(void) {
 void __attribute__((__interrupt__, no_auto_psv)) _ADCAN18Interrupt(void) {
     aux3V3Status.outputVoltage = VOLTAGE_3V3_ADC_BUFFER;
     
-    // Guardamos los valores de potencia instantáneos
-    if(aux3V3Status.currentPowerSample < INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        aux3V3Status.powerValues[aux3V3Status.currentPowerSample++] = __builtin_muluu(aux3V3Status.current, aux3V3Status.outputVoltage);
+    // Guardamos los valores de tensión para luego calcular un promedio
+    if(aux3V3Status.currentVoltageSample < INSTANTANEUS_VOLTAGE_SAMPLES) {
+        aux3V3Status.voltageSum += aux3V3Status.outputVoltage;
+        aux3V3Status.currentVoltageSample++;
     }
     
     setChannelsStep1();
@@ -173,21 +194,24 @@ void smpsInit(void){
     buckStatus.enablePID = BUCK_DEFAULT_PID_ENABLE;
     buckStatus.outputVoltage = 0;
     buckStatus.averagePower = 0;
-    buckStatus.currentPowerSample = 0;
+    buckStatus.currentVoltageSample = 0;
+    buckStatus.currentCurrentSample = 0;
     
     aux5VStatus.current = 0;
     aux5VStatus.currentLimit = MAX_CURRENT_5V;
     aux5VStatus.PID.measuredOutput = 0;
     aux5VStatus.outputVoltage = 0;
     aux5VStatus.averagePower = 0;
-    aux5VStatus.currentPowerSample = 0;
+    aux5VStatus.currentVoltageSample = 0;
+    aux5VStatus.currentCurrentSample = 0;
     
     aux3V3Status.current = 0;
     aux3V3Status.currentLimit = MAX_CURRENT_3V3;
     aux3V3Status.PID.measuredOutput = 0;
     aux3V3Status.outputVoltage = 0;
     aux3V3Status.averagePower = 0;
-    aux3V3Status.currentPowerSample = 0;
+    aux3V3Status.currentVoltageSample = 0;
+    aux3V3Status.currentCurrentSample = 0;
     
     // Configuración general del modulo PWM
     PTCONbits.PTEN = 0;         // Modulo PWM apagado
@@ -246,48 +270,55 @@ void smpsInit(void){
 }
 
 void smpsTasks(void) {
-    uint16_t n;
-    uint32_t power;
+    uint32_t val;
     
     // Cálculo de la potencia media del buck
-    if(buckStatus.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
-            power += buckStatus.powerValues[n];
-        }
+    if(buckStatus.currentVoltageSample >= INSTANTANEUS_VOLTAGE_SAMPLES && buckStatus.currentVoltageSample >= INSTANTANEUS_CURRENT_SAMPLES) {      
+        val = buckStatus.voltageSum / INSTANTANEUS_VOLTAGE_SAMPLES;
+        buckStatus.averageVoltage = val;
+        buckStatus.voltageSum = 0;
         
-        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
-        buckStatus.averagePower = power;
-        buckStatus.currentPowerSample = 0;
+        val = buckStatus.currentSum / INSTANTANEUS_CURRENT_SAMPLES;
+        buckStatus.averageCurrent = val;
+        buckStatus.currentSum = 0;
+        
+        buckStatus.averagePower = (uint32_t)buckStatus.averageCurrent * (uint32_t)buckStatus.averageVoltage;
+        
+        buckStatus.currentCurrentSample = 0;
+        buckStatus.currentVoltageSample = 0;
     }
     
     // Cálculo de la potencia media de la línea de 5V
-    if(aux5VStatus.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
-            power += aux5VStatus.powerValues[n];
-        }
+    if(aux5VStatus.currentVoltageSample >= INSTANTANEUS_VOLTAGE_SAMPLES && aux5VStatus.currentVoltageSample >= INSTANTANEUS_CURRENT_SAMPLES) {       
+        val = aux5VStatus.voltageSum / INSTANTANEUS_VOLTAGE_SAMPLES;
+        aux5VStatus.averageVoltage = val;
+        aux5VStatus.voltageSum = 0;
         
-        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
-        aux5VStatus.averagePower = power;
-        aux5VStatus.currentPowerSample = 0;
+        val = aux5VStatus.currentSum / INSTANTANEUS_CURRENT_SAMPLES;
+        aux5VStatus.averageCurrent = val;
+        aux5VStatus.currentSum = 0;
+        
+        aux5VStatus.averagePower = (uint32_t)aux5VStatus.averageCurrent * (uint32_t)aux5VStatus.averageVoltage;
+        
+        aux5VStatus.currentCurrentSample = 0;
+        aux5VStatus.currentVoltageSample = 0;
     }
     
     // Cálculo de la potencia media de la línea de 3.3V
-    if(aux3V3Status.currentPowerSample >= INSTANTANEUS_POWER_BUFFER_SAMPLES) {
-        for(n = 0, power = 0; n < INSTANTANEUS_POWER_BUFFER_SAMPLES; ++n) {
-            power += aux3V3Status.powerValues[n];
-        }
+    if(aux3V3Status.currentVoltageSample >= INSTANTANEUS_VOLTAGE_SAMPLES && aux3V3Status.currentVoltageSample >= INSTANTANEUS_CURRENT_SAMPLES) {
+        val = aux3V3Status.voltageSum / INSTANTANEUS_VOLTAGE_SAMPLES;
+        aux3V3Status.averageVoltage = val;
+        aux3V3Status.voltageSum = 0;
         
-        power = power / INSTANTANEUS_POWER_BUFFER_SAMPLES;
-        aux3V3Status.averagePower = power;
-        aux3V3Status.currentPowerSample = 0;
+        val = aux3V3Status.currentSum / INSTANTANEUS_CURRENT_SAMPLES;
+        aux3V3Status.averageCurrent = val;
+        aux3V3Status.currentSum = 0;
+        
+        aux3V3Status.averagePower = (uint32_t)aux3V3Status.averageCurrent * (uint32_t)aux3V3Status.averageVoltage;
+        
+        aux3V3Status.currentCurrentSample = 0;
+        aux3V3Status.currentVoltageSample = 0;
     }
-    
-    /*
-    if(counter >= 2048) {
-        counter = 0;
-        Nop();
-        Nop();
-    }*/
 }
 
 void buckEnable() {
