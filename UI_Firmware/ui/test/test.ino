@@ -8,7 +8,7 @@
 #define sck                            13
 #define mosi                           11
 #define a0                              9
-#define reset                           8
+#define resetPin                        8
 #define brightness                      6
 
 #define rightBtn                        3
@@ -83,12 +83,12 @@
 #define BRIGHTNESS_ADDRESS              0
 #define CONTRAST_ADDRESS                2
 #define PROFILES_START_ADDRRESS         5
-#define PROFILES_ALLOWED                3
+#define PROFILES_ALLOWED                4
 
 #define OK_BTN                          1
 #define CANCEL_BTN                      2
 
-U8G2_ST7565_NHD_C12864_2_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , reset);
+U8G2_ST7565_NHD_C12864_1_4W_SW_SPI u8g2(U8G2_R2, sck, mosi, cs, a0 , resetPin);
 
 String VBuck= "0.0", IBuck = "0.0",PBuck = "0.0",IBLIM = "0.0";
 String V5V= "0.0", I5V = "0.0",P5V = "0.0",I5VLIM = "0.0";
@@ -126,9 +126,7 @@ const char *menu_list =
 
 const char *buck_list =
           "Enable Buck\n"
-          "Enable Aux\n"
-          "Modify KP\n"
-          "Modify KI";
+          "Enable Aux";
 
 const char *profile_list = 
           "Save current\n"
