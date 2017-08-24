@@ -196,7 +196,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	Significa que necesitaremos un inductor de al menos $83\mu H$, se utilizará uno de $100\mu H$. Se puede ver que se eligió una tensión de salida de 15V para el cálculo cuando las especificaciones dicen que la misma varía entre 0 y 25V; esto es debido a que cuando la tensión de salida es variable se debe considerar el peor caso que es cuando $V_{out} = V_{in}/2$, en ese punto es donde se requiere el mayor valor de inductancia para mantener la corriente de ripple dentro de los límites establecidos.
 	
-	La elección de la corriente de ripple es una solución de compromiso, aumentar la misma nos permite utilizar valores de inductancia más pequeños pero degradando la regulación y produciendo un mayor estrés sobre el capacitor de salida que debe ser seleccionado para soporta la misma, así como un mayor ripple provocado por el ESR del capacitor, además, la corriente de salida mínima para no entrar en operación de modo discontinuo está directamente relacionada con la corriente de ripple siendo la relación $I_{out(min)} = I_{ripple}/2$ aunque cabe destacar que dicho efecto no se produce en los convertidor Buck Sincrónicos como en nuestro caso ya que al reemplazar el diodo por un MOSFET la corriente puede circular en ambos sentidos evitando que el convertidor entre en modo discontinuo. Este tema no se explicará en detalle aquí ya que no es el foco del análisis, para más información puede consultarse la siguiente nota de aplicación: "\href{http://www.ti.com/lit/an/slyt358/slyt358.pdf}{Efficiency of synchronous versus
+	La elección de la corriente de ripple es una solución de compromiso, aumentar la misma nos permite utilizar valores de inductancia más pequeños pero degradando la regulación y produciendo un mayor estrés sobre el capacitor de salida que debe ser seleccionado para soportar la misma, así como un mayor ripple provocado por el ESR del capacitor, además, la corriente de salida mínima para no entrar en operación de modo discontinuo está directamente relacionada con la corriente de ripple siendo la relación $I_{out(min)} = I_{ripple}/2$, aunque cabe destacar que dicho efecto no se produce en los convertidores Buck Sincrónicos como en nuestro caso ya que al reemplazar el diodo por un MOSFET la corriente puede circular en ambos sentidos evitando que el convertidor entre en dicho modo. Este tema no se explicará en detalle aquí ya que no es el foco del análisis, para más información puede consultarse la siguiente nota de aplicación: "\href{http://www.ti.com/lit/an/slyt358/slyt358.pdf}{Efficiency of synchronous versus
 		nonsynchronous buck converters}"
 	
 \section{Selección de los MOSFET de conmutación}
@@ -239,7 +239,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	Sin embargo, a estas frecuencia el valor del ESR del capacitor entra en juego por lo que existe una fuente de ripple más que debemos considerar, es por ello que es recomendado el uso de capacitores para alta frecuencia con un bajo ESR. Se utilizó un capacitor de $470 \mu F$ con un ESR de $350 m \Omega$:
 	
 	\begin{equation}
-		ESR_{ripple} = ESR \cdot \Delta I_L = \num{350e-3}\Omega \cdot 0.15A = 52mV
+		ESR_{ripple} = ESR \cdot \Delta I_L = \num{350e-3}\Omega \cdot 0.3A = 105mV
 	\end{equation}
 	
 	Vemos como solo el ESR del capacitor produce un ripple varias veces superior al ripple causado por la rectificación. La única forma de reducir el mismo es utilizando inductores más grandes para atenuar la corriente de ripple o el uso de un capacitor con ESR aún más bajo.
@@ -552,7 +552,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\subsection{Respuesta transitoria}
 	
-	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Se puede observar una sobre-elongación del 6.78\%. Se optó por esto a tener un error de estado estacionario que en este caso es nulo, reducir la constante Ki reduce la sobre-elongación pero aumenta el error de estado estacionario rápidamente.
+	En la figura \ref{buck:step_discrete} se observa la respuesta al escalón unitario del sistema de lazo cerrado. Vemos una sobre-elongación del 6.78\%. Se estableció una solución de compromiso priorizando un error de estado estacionario nulo. Reducir la constante Ki reduce la sobre-elongación pero aumenta el error de estado estacionario rápidamente.
 	
 	\subsection{Respuesta en frecuencia}
 	
