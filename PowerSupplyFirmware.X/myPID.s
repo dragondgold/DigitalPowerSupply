@@ -75,18 +75,15 @@ _mPID:
         ; Calculate most recent error with saturation, no limit checking required
         lac     w3, a                   ; A = PID.controlReference
         lac     w2, b                   ; B = PID.measuredOutput
-	;mov	w3, ACCAL
-	;mov	w2, ACCBL
-        sub     a			 ; A = PID.controlReference - PID.measuredOutput
+        sub     a			; A = PID.controlReference - PID.measuredOutput
 	
 	mov [w0 + #offsetcoeffFactor], w3   ; Save the number of shifts in w3, it won't be used anymore
-	sftac	a, w3			    ; A = (PID.controlReference - PID.measuredOutput) / PID.coeffFactor
+	sftac	a, w3			    ; A = (PID.controlReference - PID.measuredOutput) / 2^PID.coeffFactor
         sac.r   a, [w10]		    ; PID.errorHistory[n] = Sat(Rnd(A))
 
         ; Calculate PID Control Output
         clr     a, [w8]+=2, w4, [w10]+=2, w5            ; w4 = (Kp + Ki*(Ts/2) + Kd/Ts) = a, w5 = errorHistory[n]
-        ;lac     w1, a					; A = controlOutput[n-1]
-	mov	w1, ACCAL
+	mov	w1, ACCAL				; A = controlOutput[n-1]
         mac     w4*w5, a, [w8]+=2, w4, [w10]+=2, w5     ; A += a * errorHistory[n]
                                                         ; w4 = (-Kp + Ki*(Ts/2) - (2*Kd)/Ts) = b, w5 = errorHistory[n-1]
         mac     w4*w5, a, [w8], w4, [w10]-=2, w5        ; A += b * errorHistory[n-1]

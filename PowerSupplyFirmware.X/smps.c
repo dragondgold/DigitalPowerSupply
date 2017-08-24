@@ -53,8 +53,10 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
     buckStatus.PID.measuredOutput = BUCK_VOLTAGE_ADC_BUFFER;
     buckStatus.outputVoltage = buckStatus.PID.measuredOutput;
     
-    mPID(&buckStatus.PID);
-    setBuckDuty(buckStatus.PID.controlOutput);
+    if(buckStatus.enablePID) {
+        mPID(&buckStatus.PID);
+        setBuckDuty(buckStatus.PID.controlOutput);
+    }
     
     // Guardamos los valores de tensión para luego calcular un promedio
     if(buckStatus.currentVoltageSample < INSTANTANEUS_VOLTAGE_SAMPLES) {
@@ -187,7 +189,7 @@ void smpsInit(void){
     // Inicialización de las estructuras de cada salida
     buckStatus.duty = BUCK_INITIAL_DUTY_CYCLE;
     buckStatus.phaseReg = BUCK_PHASE;
-    buckStatus.pTrigger = 1568;
+    buckStatus.pTrigger = 350;
     buckStatus.deadTime = BUCK_DEAD_TIME;
     buckStatus.current = 0;
     buckStatus.currentLimit = BUCK_MAX_CURRENT;
@@ -537,8 +539,8 @@ void _initBuckPWM(PowerSupplyStatus *data) {
     IOCON1bits.OSYNC = 0;       // Override es asíncrono
     IOCON1bits.FLTDAT = 0b00;   // PWMH y PWML a 0 en condicion de FAULT
     
-    AUXCON1bits.HRPDIS = 0;     // Alta resolucion de periodo
-    AUXCON1bits.HRDDIS = 0;     // Alta resolucion de duty
+    AUXCON1bits.HRPDIS = 0;     // Alta resolución de periodo
+    AUXCON1bits.HRDDIS = 0;     // Alta resolución de duty
     AUXCON1bits.BLANKSEL = 0;   // Blanking deshabilitado
     AUXCON1bits.CHOPHEN = 0;    // Chop deshabilitado en PWMH
     AUXCON1bits.CHOPLEN = 0;    // Chop deshabilitado en PWML

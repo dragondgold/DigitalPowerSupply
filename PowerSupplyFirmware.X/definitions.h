@@ -35,9 +35,9 @@
 #define BUCK_MAX_CURRENT            3724    // 3A con 12 bit (del comparador)
 #define BUCK_MIN_VOLTAGE            1000    // 1V
 #define BUCK_MAX_VOLTAGE            25000   // 25V
-#define BUCK_PIC_A_COEFFICIENT      181      // (Kp + Ki*(Ts/2) + Kd/Ts) * 16
-#define BUCK_PIC_B_COEFFICIENT      -219    // (-Kp + Ki*(Ts/2) - (2*Kd)/Ts) * 16
-#define BUCK_PIC_C_COEFFICIENT      48      // (Kd/Ts) * 16
+#define BUCK_PIC_A_COEFFICIENT      101     // (Kp + Ki*(Ts/2) + Kd/Ts) * 16
+#define BUCK_PIC_B_COEFFICIENT      -117    // (-Kp + Ki*(Ts/2) - (2*Kd)/Ts) * 16
+#define BUCK_PIC_C_COEFFICIENT      19      // (Kd/Ts) * 16
 #define BUCK_PWMH_TRIS              TRISAbits.TRISA4
 #define BUCK_PWML_TRIS              TRISAbits.TRISA3
 #define BUCK_PWMH_LAT               LATBbits.LATB4
@@ -66,14 +66,14 @@
 #define AUX_5V_I_FEEDBACK_FACTOR    2.000   // mV/mA
 #define AUX_5V_W_FACTOR             (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_5V_V_FEEDBACK_FACTOR * AUX_5V_I_FEEDBACK_FACTOR))
 #define AUX_5V_VOLTAGE_GAIN         0.992
-#define AUX_5V_VOLTAGE_OFFSET       -63.43
+#define AUX_5V_VOLTAGE_OFFSET       -16.0
 
 #define MAX_CURRENT_3V3             1117    // 0.3A
 #define AUX_3V3_V_FEEDBACK_FACTOR   0.955
 #define AUX_3V3_I_FEEDBACK_FACTOR   3.000   // mV/mA
 #define AUX_3V3_W_FACTOR            (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_3V3_V_FEEDBACK_FACTOR * AUX_3V3_I_FEEDBACK_FACTOR))
 #define AUX_3V3_VOLTAGE_GAIN        1.108
-#define AUX_3V3_VOLTAGE_OFFSET      54.70
+#define AUX_3V3_VOLTAGE_OFFSET      326.03
 
 // Modulo UART
 #define RX_TRIS                 TRISBbits.TRISB12
