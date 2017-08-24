@@ -36,19 +36,9 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADCAN0Interrupt(void) {
 }
 
 /**
- * Interrupción del filtro digital 0. Corresponde a AN1 -> Buck voltage.
- * 
- * Este es un filtro de oversampling, al mismo tiempo los core 2 y 3 convierten
- *  los valores de tensión y corriente de la línea de 5V por lo que para cuando
- *  este filtro terminó, las conversiones de 5V ya están finalizadas ya que
- *  es un solo muestreo, lo mismo con la medición de corriente en AN0.
- * 
- * Solo puede utilizarse un filtro digital de forma simultánea, no podemos usar
- *  ambos filtros digitales a la vez (bug en hardware http://www.microchip.com/forums/m897747.aspx)
- * Debido a que la resolución en corriente es mucho mayor y suficiente usamos
- *  el oversampling para el muestreo de tensión únicamente.
+ * Interrupción del canal AN1 -> Buck voltage
  */
-void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) { 
+void __attribute__((__interrupt__, no_auto_psv)) _ADCAN1Interrupt(void) {
     LATBbits.LATB9 = 1;
     buckStatus.PID.measuredOutput = BUCK_VOLTAGE_ADC_BUFFER;
     buckStatus.outputVoltage = buckStatus.PID.measuredOutput;
@@ -66,7 +56,7 @@ void __attribute__((__interrupt__, no_auto_psv)) _ADFLTR0Interrupt(void) {
     
     setChannelsStep2();
     LATBbits.LATB9 = 0;
-    IFS11bits.ADFLTR0IF = 0;
+    IFS6bits.ADCAN1IF = 0;
 }
 
 /**
@@ -198,6 +188,7 @@ void smpsInit(void){
     buckStatus.averagePower = 0;
     buckStatus.currentVoltageSample = 0;
     buckStatus.currentCurrentSample = 0;
+    buckStatus.averageVoltage = 65535;
     
     aux5VStatus.current = 0;
     aux5VStatus.currentLimit = MAX_CURRENT_5V;
@@ -206,6 +197,7 @@ void smpsInit(void){
     aux5VStatus.averagePower = 0;
     aux5VStatus.currentVoltageSample = 0;
     aux5VStatus.currentCurrentSample = 0;
+    aux5VStatus.averageVoltage = 0;
     
     aux3V3Status.current = 0;
     aux3V3Status.currentLimit = MAX_CURRENT_3V3;
@@ -214,6 +206,7 @@ void smpsInit(void){
     aux3V3Status.averagePower = 0;
     aux3V3Status.currentVoltageSample = 0;
     aux3V3Status.currentCurrentSample = 0;
+    aux3V3Status.averageVoltage = 0;
     
     // Configuración general del modulo PWM
     PTCONbits.PTEN = 0;         // Modulo PWM apagado
@@ -744,7 +737,7 @@ void _initADC(void) {
     ADFL0CONbits.OVRSAM = 0b000;    // 4x oversampling (1 bit adicional)
     ADFL0CONbits.FLCHSEL = 1;       // AN1 para el filtro digital 0
     ADFL0CONbits.IE = 1;            // Interrupción habilitada
-    ADFL0CONbits.FLEN = 1;
+    ADFL0CONbits.FLEN = 0;
     
     // Interrupciones filtros
     IFS11bits.ADFLTR0IF = 0;         // Borramos flag de interrupción
@@ -759,7 +752,7 @@ void _initADC(void) {
     
     // AN1 (buck voltage)
     IFS6bits.ADCAN1IF = 0;
-    IEC6bits.ADCAN1IE = 0;
+    IEC6bits.ADCAN1IE = 1;
     IPC27bits.ADCAN1IP = 5;         // Este canal trabaja a través del filtro únicamente
     
     // AN2 (5v current)

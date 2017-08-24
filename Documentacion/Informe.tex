@@ -69,7 +69,7 @@
 \begin{titlepage}
 	\title{\Huge Diseño y construcción de fuente conmutada tipo Buck de 75W}
 	\subtitle{Análisis en detalle del diseño y desarrollo de una fuente conmutada para presentarse como trabajo final en la Universidad Tecnológica Nacional de la ciudad de San Francisco, Córdoba}
-	\date{04 de Agosto de 2017}
+	\date{24 de Agosto de 2017}
 	\maketitle
 \end{titlepage}
 
@@ -172,7 +172,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		\begin{tabular}{M{2cm}M{5cm}M{1cm}M{1cm}M{1cm}M{1cm}} \toprule
 			Parámetro & Descripción & Min & Tip & Max & Unidad
 			\\ \midrule
-			$V_{out}$ & Tensión de salida & 0 & - & 30 & V \\
+			$V_{out}$ & Tensión de salida & 0 & - & 25 & V \\
 			$I_{out}$ & Corriente de salida & 0 & - & 3 & A \\
 			$V_{ripple}$ & Tensión de ripple pico a pico & - & - & 10 & mV \\
 			$I_{ripple}$ & Corriente de ripple del inductor & \multicolumn{3}{c}{300} & mA \\
@@ -188,13 +188,13 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	\begin{equation}
 		\begin{aligned}
-		\qquad \qquad L_{min} [\mu H] &= \dfrac{V_{out} \cdot (V_{in} - V{out})}{\Delta I \cdot f_{sw} \cdot V_{in}} \cdot \num{10e6} \\
+		\qquad \qquad L_{min} [\mu H] &= \dfrac{V_{out} \cdot (V_{in} - V_{out})}{\Delta I \cdot f_{sw} \cdot V_{in}} \cdot \num{10e6} \\
 		& = \dfrac{15 \cdot (30 - 15)}{\num{300e-3} \cdot \num{300e3} \cdot 30} \cdot \num{10e6}\\
 		& = 83 \mu H
 		\end{aligned}
 	\end{equation}
 	
-	Significa que necesitaremos un inductor de al menos $83\mu H$, se utilizará uno de $100\mu H$. Se puede ver que se eligió una tensión de salida de 15V para el cálculo cuando las especificaciones dicen que la misma varía entre 0 y 30V; esto es debido a que cuando la tensión de salida es variable se debe considerar el peor caso que es cuando $V_{out} = V_{in}/2$, en ese punto es donde se requiere el mayor valor de inductancia para mantener la corriente de ripple dentro de los límites establecidos.
+	Significa que necesitaremos un inductor de al menos $83\mu H$, se utilizará uno de $100\mu H$. Se puede ver que se eligió una tensión de salida de 15V para el cálculo cuando las especificaciones dicen que la misma varía entre 0 y 25V; esto es debido a que cuando la tensión de salida es variable se debe considerar el peor caso que es cuando $V_{out} = V_{in}/2$, en ese punto es donde se requiere el mayor valor de inductancia para mantener la corriente de ripple dentro de los límites establecidos.
 	
 	La elección de la corriente de ripple es una solución de compromiso, aumentar la misma nos permite utilizar valores de inductancia más pequeños pero degradando la regulación y produciendo un mayor estrés sobre el capacitor de salida que debe ser seleccionado para soporta la misma, así como un mayor ripple provocado por el ESR del capacitor, además, la corriente de salida mínima para no entrar en operación de modo discontinuo está directamente relacionada con la corriente de ripple siendo la relación $I_{out(min)} = I_{ripple}/2$ aunque cabe destacar que dicho efecto no se produce en los convertidor Buck Sincrónicos como en nuestro caso ya que al reemplazar el diodo por un MOSFET la corriente puede circular en ambos sentidos evitando que el convertidor entre en modo discontinuo. Este tema no se explicará en detalle aquí ya que no es el foco del análisis, para más información puede consultarse la siguiente nota de aplicación: "\href{http://www.ti.com/lit/an/slyt358/slyt358.pdf}{Efficiency of synchronous versus
 		nonsynchronous buck converters}"
@@ -236,13 +236,13 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 		\end{aligned}
 	\end{equation}
 
-	Sin embargo, a estas frecuencia el valor del ESR del capacitor entra en juego por lo que existe una fuente de ripple más que debemos considerar, es por ello que es recomendado el uso de capacitores para alta frecuencia con un bajo ESR. Se utilizó un capacitor de $470 \mu F$ con un ESR de ($350 m \Omega$):
+	Sin embargo, a estas frecuencia el valor del ESR del capacitor entra en juego por lo que existe una fuente de ripple más que debemos considerar, es por ello que es recomendado el uso de capacitores para alta frecuencia con un bajo ESR. Se utilizó un capacitor de $470 \mu F$ con un ESR de $350 m \Omega$:
 	
 	\begin{equation}
 		ESR_{ripple} = ESR \cdot \Delta I_L = \num{350e-3}\Omega \cdot 0.15A = 52mV
 	\end{equation}
 	
-	Vemos como solo el ESR del capacitor produce un ripple varias veces superior al ripple causado por la rectificación. La única forma de reducir el mismo es utilizando inductores más grandes para atenuar la corriente de ripple o el uso de capacitor de bajo ESR.
+	Vemos como solo el ESR del capacitor produce un ripple varias veces superior al ripple causado por la rectificación. La única forma de reducir el mismo es utilizando inductores más grandes para atenuar la corriente de ripple o el uso de un capacitor con ESR aún más bajo.
 	
 \section{Medición de corriente de salida}
 
@@ -548,7 +548,7 @@ En el capítulo \textit{\nameref{chapter:pid}} desarrollaremos y explicaremos la
 	
 	Que como se verá luego, puede ejecutarse muy rápidamente en un DSP con las instrucciones MAC que proporciona.
 	
-	Con estas configuraciones se realiza el análisis del sistema con la herramienta \textit{Linear Analysis Tool} de Simulink que se encuentra en Analysis \textrightarrow \ Control Design \textrightarrow \ Linear Analysis. Los valores para las constantes del PID obtenidas son $K_p = 5$, $K_i = 6000$ y $K_d = \num{5e-6}$.
+	Con estas configuraciones se realiza el análisis del sistema con la herramienta \textit{Linear Analysis Tool} de Simulink que se encuentra en Analysis \textrightarrow \ Control Design \textrightarrow \ Linear Analysis. Los valores para las constantes del PID obtenidas son $K_p = 5$, $K_i = 40000$ y $K_d = \num{5e-6}$.
 	
 	\subsection{Respuesta transitoria}
 	
@@ -626,9 +626,7 @@ Como se explica arriba, este microcontrolador tiene la posibilidad de generar ti
 
 \section{Metodología de muestreo}
 
-El DSP cuenta con 4 cores ADC que permiten convertir de forma simultánea hasta 4 entradas analógicas. Además, incorpora un filtro digital el cual es capaz de realizar oversampling de forma automática. 
-
-Se aprovechan estas funciones para muestrear de forma simultánea la tensión y corriente del buck con un oversampling de 4x en la tensión lo que añade 1 bit de resolución a los 12 bits del ADC. Al mismo tiempo se muestrea la corriente y tensión de la línea de 5V. Una vez terminadas todas estas conversiones se pasa a la línea de 3.3V donde se mide también de manera simultánea la tensión y la corriente.
+El DSP cuenta con 4 cores ADC que permiten convertir de forma simultánea hasta 4 entradas analógicas. De esta manera dr muestrea de forma simultánea la tensión y corriente de cada una de las salidas.
 
 Todo este ciclo se repite cada $6.66 \mu s$ que equivalen a 2 períodos del PWM.
 
@@ -658,12 +656,12 @@ El siguiente es el circuito de realimentación de tensión usado para poder toma
 
 El circuito es el mismo para todas las salidas variando únicamente el divisor resistivo de entrada al seguidor de tensión. Se debe tener en cuenta el offset introducido por el seguidor de tensión que se encuentra en el rango de $\pm 4.5mV$ lo que por ejemplo, en la tensión de salida del Buck representaría un error de $\pm 41mV$ de no ser compensado.
 
-La resolución del ADC del DSP es de 12 bits e implementamos la técnica de oversampling para la corriente y tensión de salida del buck que nos otorgan 14 bit de resolución. Teniendo una tensión de referencia para el ADC de 3.3V con una variación máxima de $\pm0.08\%$, podemos calcular la resolución de tensión que tenemos al medir cada una de las salidas de la fuente y el error asociado.
+La resolución del ADC del DSP es de 12 bits y teniendo una tensión de referencia para el ADC de 3.3V con una variación máxima de $\pm0.08\%$, podemos calcular la resolución de tensión que tenemos al medir cada una de las salidas de la fuente y el error asociado.
 
 La resolución en tensión del ADC puede ser calculada como:
 
 \begin{equation}
-	Res_{buck} = 3.3V / 2^{13} = 402.83 \mu V
+	Res_{buck} = 3.3V / 2^{12} = 805.65 \mu V
 \end{equation}
 \begin{equation}
 	Res_{aux} = 3.3V / 2^{12} = 805.65 \mu V
@@ -678,17 +676,17 @@ Vamos a calcular el factor de atenuación de cada salida que viene dado por el v
 Con la resolución del ADC y el factor de atenuación podemos calcular entonces la resolución que tenemos al medir la tensión de salida del Buck, en este caso:
 
 \begin{equation}
-	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{402.83e-6} \mu V}{0.109} = 3.70 mV
+	Resolucion \ salida = \frac{Res}{Vo/Vi} = \frac{\num{402.83e-6} \mu V}{0.109} = 7.39mV
 \end{equation}
 
-Como la tensión de referencia tiene una variación de $\pm0.08\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm0.08\%$ que se traduce en una variación de $\pm2.96 \mu V$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
+Como la tensión de referencia tiene una variación de $\pm0.08\%$, la lectura del ADC se ve directamente afectada por esta referencia, por lo que la resolución de la tensión de salida también tendrá un error del $\pm0.08\%$ que se traduce en una variación de $\pm5.91 \mu V$. En la siguiente tabla se muestran los resultados del mismo procedimiento aplicado a las demás salidas:
 
 \begin{table}[H]
 	\centering
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
 		Parámetro & Factor de atenuación Vo/Vi & Resolución & Error 
 		\\ \midrule
-		$V_{buck}$ & 0.109 & 3.70mV & $\pm1.48 \mu V$ \\
+		$V_{buck}$ & 0.109 & 7.39mV & $\pm5.91 \mu V$ \\
 		$V_{5V}$ & 0.637 & 1.25mV & $\pm1 \mu V$ \\
 		$V_{3.3V}$ & 0.954 & 0.83mV & $\pm0.66 \mu V$ \\
 		\bottomrule
@@ -709,7 +707,7 @@ Para medir la corriente de salida se toma la señal diferencial proveniente de l
 Utilizando la resolución del ADC obtenida en la sección anterior podemos calcular la resolución de corriente que tenemos en cada salida. Como se tiene una ganancia de 20, la resolución de tensión del ADC pasa a ser de:
 
 \begin{equation}
-	Res_{buck} = 402.83 \mu V / 20 = 20.14\mu V
+	Res_{buck} = 805.65 \mu V / 20 = 40.28\mu V
 \end{equation}
 \begin{equation}
 	Res_{aux} = 805.65 \mu V / 20 = 40.28 \mu V
@@ -718,7 +716,7 @@ Utilizando la resolución del ADC obtenida en la sección anterior podemos calcu
 Tomemos como ejemplo la salida del buck cuya resistencia de sensado es de $50m\Omega$:
 
 \begin{equation}
-	Resolucion \ Corriente = Res / 50m\Omega = 402.8 \mu A
+	Resolucion \ Corriente = Res / 50m\Omega = 805.6 \mu A
 \end{equation}
 
 Aplicando el mismo proceso a todas las demás salidas:
@@ -726,11 +724,11 @@ Aplicando el mismo proceso a todas las demás salidas:
 \begin{table}[H]
 	\centering
 	\begin{tabular}{M{2cm}M{5cm}M{3cm}M{3cm}} \toprule
-		Parámetro & Resistencia de sensado & Resolución & Error 
+		Parámetro & Resistencia de sensado & Resolución
 		\\ \midrule
-		$I_{buck}$ & $50m\Omega$ & $402.8 \mu A$ & $\pm 322.24nA$ \\
-		$I_{5V}$ & $100m\Omega$ & $408.2 \mu A$ & $\pm 326nA$ \\
-		$I_{3.3V}$ & $150m\Omega$ & $272.13 \mu A$ & $\pm 218nA$ \\
+		$I_{buck}$ & $50m\Omega$ & $805.6 \mu A$ \\
+		$I_{5V}$ & $100m\Omega$ & $408.2 \mu A$ \\
+		$I_{3.3V}$ & $150m\Omega$ & $272.13 \mu A$ \\
 		\bottomrule
 	\end{tabular}
 	\caption{Resolución de las corrientes de salida}
@@ -753,11 +751,11 @@ En el anexo se encuentra el programa que corresponde a la ejecución del algorit
 Esta rutina se ejecuta cada $6.66\mu s$ por lo que es importante que se ejecute rápidamente, para ello el algoritmo solo utiliza números enteros de 16 bit por lo que deben convertirse todos los valores en coma flotante de las constantes del PID a enteros para ser utilizados. Como se describe en la ecuación \ref{pid:algorithm} se calculan las constantes $a$, $b$ y $c$ para el controlador PID usando los valores $K_p$, $K_i$ y $K_d$ obtenidos:
 
 \begin{equation}
-	a = K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s} = 6.215
+	a = K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s} = 6.3
 \end{equation}
 
 \begin{equation}
-	b = -K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s} = -7.385
+	b = -K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s} = -7.3
 \end{equation}
 
 \begin{equation}
@@ -782,11 +780,11 @@ Por lo que el valor de cada constante se convierte en un valor mayor que puede r
 Eligiendo $x = 16$, los valores de $a$, $b$ y $c$ quedan entonces como:
 
 \begin{equation}
-a = (K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s}) \times 16 = 99.44 = 99
+a = (K_p + K_i \times \frac{T_s}{2} + \frac{K_d}{T_s}) \times 16 = 100.8 = 101
 \end{equation}
 
 \begin{equation}
-b = (-K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s}) \times 16 = -118.16 = -118
+b = (-K_p + K_i \times \frac{T_s}{2} - \frac{2K_d}{T_s}) \times 16 = -116.8 = -117
 \end{equation}
 
 \begin{equation}
@@ -861,25 +859,25 @@ Se realizó la medición de ripple bajo dos condiciones de carga aplicando un fi
 
 \section{Tiempo de respuesta}
 
-Para la medición de los tiempos de respuesta de la fuente se aplicó una carga de $9\Omega$ y se incrementó la tensión de salida de 2V a 20V para medir el tiempo de subida y viceversa para medir el tiempo de bajada. Los resultados obtenidos usando un osciloscopio Rigol DS1052E fueron:
+Para la medición de los tiempos de respuesta de la fuente se aplicó una carga de $8\Omega$ y se incrementó la tensión de salida de 1V a 20V para medir el tiempo de subida y viceversa para medir el tiempo de bajada. Los resultados obtenidos usando un osciloscopio Rigol DS1052E fueron:
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=\textwidth,height=0.4\textheight,keepaspectratio]{rise-time}
-	\caption{Tiempo de subida de 2V a 20V de 330$\mu s$}
+	\caption{Tiempo de subida de 1V a 20V de 308$\mu s$}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=\textwidth,height=0.4\textheight,keepaspectratio]{fall-time}
-	\caption{Tiempo de bajada de 20V a 2V de $610\mu s$}
+	\caption{Tiempo de bajada de 20V a 1V de $476\mu s$}
 \end{figure}
 
 \chapter{Conclusión}
 
-El sistema es estable y funciona perfectamente con los parámetros del PID calculados en MATLAB tal como lo indicaba el modelo en la teoría. El ripple es ligeramente superior al calculado debido al ESR de los capacitores. La regulación de carga y de línea es excelente manteniendo la tensión prácticamente sin variación.
+El sistema es estable y funciona perfectamente con los parámetros del PID calculados en MATLAB tal como lo indicaba el modelo en la teoría. El ripple es ligeramente superior al calculado debido al ESR de los capacitores. La regulación de carga y de línea es excelente manteniendo la tensión prácticamente sin variación. 
 
-Algunas mejores posibles son el reemplazo del transformador de 50Hz por una fuente conmutada para poder sacar más potencia (la cual se encuentra limitada actualmente por el transformador) y reducir el peso. 
+En la simulación de MATLAB se observó un porcentaje considerable de sobre-tensión que no fue observado en el sistema real, esto puede deberse a los efectos parásitos del circuito que no fueron considerados y la pérdida de resolución debido a la utilización de enteros en lugar de coma flotante, aquí una posible mejora es la de utilizar punto fijo para aumentar la resolución. Otra mejora posible son el reemplazo del transformador de 50Hz por una fuente conmutada para poder sacar más potencia (la cual se encuentra limitada actualmente por el transformador) y reducir el peso.
 
 \newpage
 \chapter{Bibliografía y Contacto}
@@ -905,6 +903,7 @@ Algunas mejores posibles son el reemplazo del transformador de 50Hz por una fuen
 	\item Mathworks - Design a PID Controller Using Simulated I/O Data - \url{https://www.mathworks.com/help/slcontrol/examples/design-a-pid-controller-using-simulated-i-o-data.html}
 	\item Mathworks - Plotting System Responses - \url{https://www.mathworks.com/help/control/examples/plotting-system-responses.html}
 	\item Mathworks - Specify Portion of Model to Linearize - \url{https://www.mathworks.com/help/slcontrol/ug/specify-model-portion-to-linearize.html}
+	\item Discrete PID for Robotics - \url{http://portal.ku.edu.tr/~cbasdogan/Courses/Robotics/projects/Discrete_PID.pdf}
 	\item EEVBlog - \url{https://www.eevblog.com/forum/projects/pic-silicon-bugs-adc-offset/}
 	\item Toroids Info - \url{http://toroids.info/}
 	\item Foro diyAudio - \url{www.diyaudio.com}

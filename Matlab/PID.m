@@ -9,3 +9,4 @@ Vi = 30;        % Tensión de entrada al buck
 
 % Función de transferencia del Convertidor Buck
 H = Vi * ( (R + (s*R*Rc*C))/((s^2) * (L*C*(R+Rc)) + s*(R*Rc*C + Rl*C*(R+Rc) + L) + R + Rl) )
+

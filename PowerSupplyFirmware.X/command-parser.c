@@ -95,7 +95,6 @@ int16_t _readStringWithTimeout(uint16_t timeout) {
 float getBuckVoltage() {
     uint16_t matched = getMatchedADCValue(buckStatus.averageVoltage, BUCK_ADC_VOLTAGE_OFFSET, BUCK_ADC_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)BUCK_VOLTAGE_ADC_COUNTS)) / (float)BUCK_V_FEEDBACK_FACTOR;
-    //return buckStatus.outputVoltage;
 }
 
 /**
@@ -103,7 +102,6 @@ float getBuckVoltage() {
  * @return Corriente del buck en amperes
  */
 float getBuckCurrent() {
-    //return buckStatus.PID.controlReference;
     return ((float)getMatchedCurrentADCValue(buckStatus.averageCurrent)*(ADC_VREF/(float)BUCK_CURRENT_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
 }
 
@@ -131,7 +129,6 @@ float getBuckCurrentLimit() {
 float get5VVoltage() {
     uint16_t matched = getMatchedADCValue(aux5VStatus.averageVoltage, AUX_5V_VOLTAGE_OFFSET, AUX_5V_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_5V_V_FEEDBACK_FACTOR;
-    //return aux5VStatus.outputVoltage;
 }
 
 /**
@@ -165,7 +162,6 @@ float get5VCurrentLimit() {
 float get3V3Voltage() {
     uint16_t matched = getMatchedADCValue(aux3V3Status.averageVoltage, AUX_3V3_VOLTAGE_OFFSET, AUX_3V3_VOLTAGE_GAIN);
     return ((float)matched*(ADC_VREF/(float)AUX_ADC_COUNTS)) / (float)AUX_3V3_V_FEEDBACK_FACTOR;
-    //return aux3V3Status.outputVoltage;
 }
 
 /**

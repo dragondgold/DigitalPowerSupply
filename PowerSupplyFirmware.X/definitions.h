@@ -14,7 +14,7 @@
 #define SYSTEM_VERSION              "2.0.0"
 
 #define BUCK_CURRENT_ADC_BUFFER     ADCBUF0
-#define BUCK_VOLTAGE_ADC_BUFFER     ADFL0DAT
+#define BUCK_VOLTAGE_ADC_BUFFER     ADCBUF1
 
 #define CURRENT_5V_ADC_BUFFER       ADCBUF2
 #define VOLTAGE_5V_ADC_BUFFER       ADCBUF3
@@ -42,10 +42,10 @@
 #define BUCK_PWML_TRIS              TRISAbits.TRISA3
 #define BUCK_PWMH_LAT               LATBbits.LATB4
 #define BUCK_PWML_LAT               LATBbits.LATB3
-#define BUCK_V_FEEDBACK_FACTOR      0.107
+#define BUCK_V_FEEDBACK_FACTOR      0.10665
 #define BUCK_I_FEEDBACK_FACTOR      1.000   // mV/mA
 #define BUCK_CURRENT_ADC_COUNTS     4096    // 12 bits
-#define BUCK_VOLTAGE_ADC_COUNTS     8096    // 13 bits con oversampling
+#define BUCK_VOLTAGE_ADC_COUNTS     4096    // 12 bits
 // Este factor permite convertir la multiplicación de tensión*corriente en valores de ADC al valor
 //  correspondiente en Watts. La ventaja de esto es que en la interrupción podemos multiplicar los
 //  valores enteros del ADC rápidamente y para obtener el valor de potencia en Watts multiplicar por
@@ -53,8 +53,8 @@
 //
 // W = (ADC_V * ADC_I) * ((Vref^2)/(ADC_COUNT_I * ADC_COUNT_V) / (FACTOR_V * FACTOR_I))
 #define BUCK_W_FACTOR               (((ADC_VREF*ADC_VREF)/((double)BUCK_VOLTAGE_ADC_COUNTS*(double)BUCK_CURRENT_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR))
-#define BUCK_ADC_VOLTAGE_GAIN       0.964
-#define BUCK_ADC_VOLTAGE_OFFSET     54.50
+#define BUCK_ADC_VOLTAGE_GAIN       0.9636
+#define BUCK_ADC_VOLTAGE_OFFSET     44.275
 
 // parámetros lineas auxiliares
 #define AUX_ADC_COUNTS              4096
@@ -62,11 +62,11 @@
 #define MAX_CURRENT_5V              2482    // 1A
 #define ON_OFF_5V_TRIS              TRISBbits.TRISB1  
 #define ON_OFF_5V_LAT               LATBbits.LATB1
-#define AUX_5V_V_FEEDBACK_FACTOR    0.638
+#define AUX_5V_V_FEEDBACK_FACTOR    0.6375
 #define AUX_5V_I_FEEDBACK_FACTOR    2.000   // mV/mA
 #define AUX_5V_W_FACTOR             (((ADC_VREF*ADC_VREF)/((double)AUX_ADC_COUNTS*(double)AUX_ADC_COUNTS)) / (AUX_5V_V_FEEDBACK_FACTOR * AUX_5V_I_FEEDBACK_FACTOR))
-#define AUX_5V_VOLTAGE_GAIN         0.992
-#define AUX_5V_VOLTAGE_OFFSET       -16.0
+#define AUX_5V_VOLTAGE_GAIN         0.9763
+#define AUX_5V_VOLTAGE_OFFSET       6.7614
 
 #define MAX_CURRENT_3V3             1117    // 0.3A
 #define AUX_3V3_V_FEEDBACK_FACTOR   0.955

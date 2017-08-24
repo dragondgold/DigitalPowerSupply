@@ -7,7 +7,7 @@ Model {
     NumRootInports	    0
     NumRootOutports	    0
     ParameterArgumentNames  ""
-    ComputedModelVersion    "1.36"
+    ComputedModelVersion    "1.38"
     NumModelReferences	    0
     NumTestPointedSignals   0
     NumProvidedFunctions    0
@@ -79,9 +79,9 @@ Model {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "tmax4"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Aug 16 13:57:10 2017"
-  RTWModifiedTimeStamp	  424792614
-  ModelVersionFormat	  "1.%<AutoIncrement:36>"
+  LastModifiedDate	  "Thu Aug 24 15:09:26 2017"
+  RTWModifiedTimeStamp	  425484812
+  ModelVersionFormat	  "1.%<AutoIncrement:38>"
   ConfigurationManager	  "none"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -797,7 +797,6 @@ Model {
 	  AutoInsertRateTranBlk	  off
 	  SampleTimeConstraint	  "Unconstrained"
 	  InsertRTBMode		  "Whenever possible"
-	  SampleTimeProperty	  []
 	}
 	Simulink.DataIOCC {
 	  $ObjectID		  23
@@ -1524,10 +1523,10 @@ Model {
       "49019608 0.0745098039215686;0.0588235294117647 1 1;1 0.0745098039215686 0.650980392156863])),extmgr.Configuratio"
       "n('Tools','Plot Navigation',true,'OnceAtStop',false,'PreviousZoomMode','ZoomX','AutoscaleMode','Auto'),extmgr.Co"
       "nfiguration('Tools','Measurements',true,'Measurements',struct('signalstats',[],'tcursors',struct('XCoordinates',"
-      "[0.000281825124688279 0.00385368609725686],'YCoordinates',[22.0636764704604 20.1826981707179],'CursorChannels',["
-      "1 1],'WaveformCursors',true,'ShowHorizontal',false,'ShowVertical',true,'LockCursorSpacing',false,'SnapToData',fa"
-      "lse,'SettingsPanelOpen',0,'MeasurementsPanelOpen',1)),'Version','2016a')),'Version','2016a','Position',[1 41 192"
-      "0 963])"
+      "[0.000281825124688279 0.000101970791457286],'YCoordinates',[4.91042968160507 6.04275947478736],'CursorChannels',"
+      "[1 1],'WaveformCursors',true,'ShowHorizontal',false,'ShowVertical',true,'LockCursorSpacing',false,'SnapToData',f"
+      "alse,'SettingsPanelOpen',0,'MeasurementsPanelOpen',1)),'Version','2016a')),'Version','2016a','Position',[1 41 19"
+      "08 963])"
     }
     Block {
       BlockType		      Reference
@@ -1549,8 +1548,8 @@ Model {
       UseFilter		      off
       ControllerParametersSource "internal"
       P			      "5"
-      I			      "6000"
-      D			      "5e-06"
+      I			      "40000"
+      D			      "0.000006"
       N			      "0.009092182911359"
       InitialConditionSource  "internal"
       InitialConditionForIntegrator "0"
@@ -1685,7 +1684,7 @@ Model {
       ZOrder		      5
       NamePlacement	      "alternate"
       Time		      "0"
-      After		      "20"
+      After		      "10"
       SampleTime	      "0"
       Port {
 	PortNumber		1
