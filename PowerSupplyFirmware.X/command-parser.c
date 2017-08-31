@@ -102,7 +102,8 @@ float getBuckVoltage() {
  * @return Corriente del buck en amperes
  */
 float getBuckCurrent() {
-    return ((float)getMatchedCurrentADCValue(buckStatus.averageCurrent)*(ADC_VREF/(float)BUCK_CURRENT_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
+    uint16_t matched = getMatchedADCValue(buckStatus.averageCurrent, BUCK_ADC_CURRENT_OFFSET, BUCK_ADC_CURRENT_GAIN);
+    return ((float)matched*(ADC_VREF/(float)BUCK_CURRENT_ADC_COUNTS)) / (float)BUCK_I_FEEDBACK_FACTOR;
 }
 
 /**

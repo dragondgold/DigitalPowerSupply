@@ -55,8 +55,10 @@
 #define BUCK_W_FACTOR               (((ADC_VREF*ADC_VREF)/((double)BUCK_VOLTAGE_ADC_COUNTS*(double)BUCK_CURRENT_ADC_COUNTS)) / (BUCK_V_FEEDBACK_FACTOR * BUCK_I_FEEDBACK_FACTOR))
 #define BUCK_ADC_VOLTAGE_GAIN       0.9636
 #define BUCK_ADC_VOLTAGE_OFFSET     44.275
+#define BUCK_ADC_CURRENT_GAIN       0.9956
+#define BUCK_ADC_CURRENT_OFFSET     62.000
 
-// parámetros lineas auxiliares
+// Parámetros lineas auxiliares
 #define AUX_ADC_COUNTS              4096
 
 #define MAX_CURRENT_5V              2482    // 1A

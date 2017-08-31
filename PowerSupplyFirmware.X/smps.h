@@ -93,7 +93,6 @@ void set3V3CurrentLimit(uint16_t currentLimit);
 
 uint16_t getMatchedADCValue(uint16_t adcValue, float offset, float gain);
 uint16_t getInverseMatchedADCValue(uint16_t adcValue, float offset, float gain);
-uint16_t getMatchedCurrentADCValue(uint16_t adcValue);
 
 void _initBuckPWM(PowerSupplyStatus *data);
 void _initADC(void);

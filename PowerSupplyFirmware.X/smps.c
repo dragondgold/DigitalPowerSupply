@@ -393,6 +393,7 @@ void setBuckCurrentLimit(uint16_t currentLimit) {
     //  en milivolts
     float v = (float)BUCK_I_FEEDBACK_FACTOR * (float)currentLimit;
     uint16_t ref = (uint16_t)(v * ((float)4096/(ADC_VREF*1000.0)));
+    ref = getInverseMatchedADCValue(ref, BUCK_ADC_CURRENT_OFFSET, BUCK_ADC_CURRENT_GAIN);
     
     if(ref > BUCK_MAX_CURRENT) {
         ref = BUCK_MAX_CURRENT;
@@ -480,10 +481,6 @@ uint16_t getMatchedADCValue(uint16_t adcValue, float offset, float gain) {
  */
 uint16_t getInverseMatchedADCValue(uint16_t adcValue, float offset, float gain) {
     return (uint16_t)(((float)adcValue - offset) / gain);
-}
-
-uint16_t getMatchedCurrentADCValue(uint16_t adcValue) {
-    return adcValue;
 }
 
 void _initBuckPWM(PowerSupplyStatus *data) {
